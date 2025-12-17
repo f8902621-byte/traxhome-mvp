@@ -1,4 +1,8 @@
 export default function handler(req, res) {
+  // Empêcher l'exécution pendant la génération statique
+  if (!res || typeof res.status !== 'function') {
+    return;
+  }
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
