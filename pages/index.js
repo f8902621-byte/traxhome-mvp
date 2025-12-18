@@ -55,7 +55,7 @@ export default function Home() {
       loading: 'Đang tìm kiếm...',
       min: 'Tối thiểu',
       max: 'Tối đa',
-      required: 'Trường bắt buộc: Thành phố - Loại BDS - Giá tối thiểu - Giá tối đa',
+    required: 'Trường bắt buộc: Thành phố - Loại BDS - Giá tối đa',
       selectCity: 'Chọn thành phố',
       selectDistrict: 'Chọn quận/huyện',
       selectType: 'Chọn loại BDS',
@@ -91,7 +91,7 @@ export default function Home() {
       loading: 'Searching...',
       min: 'Min',
       max: 'Max',
-      required: 'Required: City - Property Type - Min Price - Max Price',
+required: 'Required: City - Property Type - Max Price',
       selectCity: 'Select city',
       selectDistrict: 'Select district',
       selectType: 'Select type',
@@ -127,7 +127,7 @@ export default function Home() {
       loading: 'Recherche...',
       min: 'Min',
       max: 'Max',
-      required: 'Requis: Ville - Type - Prix Min - Prix Max',
+required: 'Requis: Ville - Type - Prix Max',
       selectCity: 'Choisir ville',
       selectDistrict: 'Choisir district',
       selectType: 'Choisir type',
@@ -205,7 +205,7 @@ export default function Home() {
   };
 
   const handleSearch = async () => {
-    if (!searchParams.city || !searchParams.propertyType || !searchParams.priceMin || !searchParams.priceMax) {
+ if (!searchParams.city || !searchParams.propertyType || !searchParams.priceMax) {
       setError(t.required);
       return;
     }
@@ -413,7 +413,7 @@ export default function Home() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">
-                    {t.priceMin} <span className="text-red-500">*</span>
+                    {t.priceMin}
                   </label>
                   <div className="relative">
                     <input
@@ -531,7 +531,7 @@ export default function Home() {
             <div className="flex justify-between items-center pt-4 border-t bg-red-50 -mx-6 -mb-6 px-6 py-4 rounded-b-xl">
               <div>
                 <p className="text-sm font-semibold text-red-600">⚠️ {language === 'vn' ? 'Trường bắt buộc:' : language === 'fr' ? 'Champs requis:' : 'Required fields:'}</p>
-                <p className="text-sm text-red-600">• {t.city} • {t.propertyType} • {t.priceMin} • {t.priceMax}</p>
+                <p className="text-sm text-red-600">• {t.city} • {t.propertyType} • {t.priceMax}</p>
               </div>
               <button
                 onClick={handleSearch}
