@@ -139,8 +139,8 @@ export default function Home() {
 
   const urgentKeywords = [
     { vn: 'Bán gấp', en: 'Urgent Sale', fr: 'Vente Urgente' },
-    { vn: 'Bán nhanh', en: 'Quick Sale', fr: 'Vente Rapide' },
-    { vn: 'Cần bán nhanh', en: 'Need Quick Sale', fr: 'Besoin Vente Rapide' },
+{ vn: 'Bán nhanh', en: 'Quick Sale', fr: 'Vente Express' },
+{ vn: 'Cần bán nhanh', en: 'Need Quick Sale', fr: 'Doit Vendre Vite' },
     { vn: 'Thanh lý rẻ', en: 'Cheap Liquidation', fr: 'Liquidation Pas Cher' },
     { vn: 'Bất ngờ', en: 'Unexpected', fr: 'Inattendu' },
     { vn: 'Kẹt tiền', en: 'Need Money', fr: 'Besoin Argent' },
