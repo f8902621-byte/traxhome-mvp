@@ -374,6 +374,34 @@ const saveCurrentSearch = () => {
     params: { ...searchParams },
     date: new Date().toLocaleDateString()
   };
+  const saveCurrentSearch = () => {
+  const searchName = `${searchParams.city} - ${searchParams.propertyType} - ${searchParams.priceMax} Tỷ`;
+  const newSearch = {
+    id: Date.now(),
+    name: searchName,
+    params: { ...searchParams },
+    date: new Date().toLocaleDateString()
+  };
+  const updated = [...savedSearches, newSearch];
+  setSavedSearches(updated);
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('traxhome_searches', JSON.stringify(updated));
+  }
+  alert(t.searchSaved);
+};
+
+const loadSavedSearch = (search) => {
+  setSearchParams(search.params);
+  setShowSavedSearches(false);
+};
+
+const deleteSavedSearch = (id) => {
+  const updated = savedSearches.filter(s => s.id !== id);
+  setSavedSearches(updated);
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('traxhome_searches', JSON.stringify(updated));
+  }
+};
   const updated = [...savedSearches, newSearch];
   setSavedSearches(updated);
   localStorage.setItem('traxhome_searches', JSON.stringify(updated));
