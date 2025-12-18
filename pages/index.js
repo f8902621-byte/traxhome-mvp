@@ -11,7 +11,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [expandedPhoto, setExpandedPhoto] = useState(null);
-
+  const [sortBy, setSortBy] = useState('score');
   const [searchParams, setSearchParams] = useState({
     city: '',
     district: '',
@@ -51,6 +51,11 @@ export default function Home() {
       viewDetails: 'Xem chi tiết',
       export: 'Xuất Excel',
       lowestPrice: 'Giá thấp nhất',
+      sortBy: 'Sắp xếp theo',
+      sortScore: 'Điểm phù hợp',
+      sortPriceAsc: 'Giá tăng dần',
+      sortPriceDesc: 'Giá giảm dần',
+      sortDateDesc: 'Mới nhất',
       highestPrice: 'Giá cao nhất',
       loading: 'Đang tìm kiếm...',
       min: 'Tối thiểu',
@@ -62,6 +67,11 @@ export default function Home() {
       allDistricts: 'Tất cả quận/huyện',
       buy: 'Mua',
       sell: 'Bán'
+      sortBy: 'Sắp xếp theo',
+      sortScore: 'Điểm phù hợp',
+      sortPriceAsc: 'Giá tăng dần',
+      sortPriceDesc: 'Giá giảm dần',
+      sortDateDesc: 'Mới nhất',
     },
     en: {
       menu: 'Menu',
@@ -87,6 +97,11 @@ export default function Home() {
       viewDetails: 'View Details',
       export: 'Export Excel',
       lowestPrice: 'Lowest Price',
+      sortBy: 'Sort by',
+      sortScore: 'Match Score',
+      sortPriceAsc: 'Price: Low to High',
+      sortPriceDesc: 'Price: High to Low',
+      sortDateDesc: 'Newest First',
       highestPrice: 'Highest Price',
       loading: 'Searching...',
       min: 'Min',
@@ -98,6 +113,11 @@ required: 'Required: City - Property Type - Max Price',
       allDistricts: 'All districts',
       buy: 'Buy',
       sell: 'Sell'
+      sortBy: 'Sort by',
+      sortScore: 'Match Score',
+      sortPriceAsc: 'Price: Low to High',
+      sortPriceDesc: 'Price: High to Low',
+      sortDateDesc: 'Newest First',
     },
     fr: {
       menu: 'Menu',
@@ -123,6 +143,11 @@ required: 'Required: City - Property Type - Max Price',
       viewDetails: 'Détails',
       export: 'Exporter',
       lowestPrice: 'Prix Min',
+      sortBy: 'Trier par',
+      sortScore: 'Score',
+      sortPriceAsc: 'Prix croissant',
+      sortPriceDesc: 'Prix décroissant',
+      sortDateDesc: 'Plus récent',
       highestPrice: 'Prix Max',
       loading: 'Recherche...',
       min: 'Min',
@@ -134,6 +159,11 @@ required: 'Requis: Ville - Type - Prix Max',
       allDistricts: 'Tous les districts',
       buy: 'Achat',
       sell: 'Vente'
+      sortBy: 'Trier par',
+      sortScore: 'Score',
+      sortPriceAsc: 'Prix croissant',
+      sortPriceDesc: 'Prix décroissant',
+      sortDateDesc: 'Plus récent',
     }
   }[language];
 
@@ -283,6 +313,24 @@ required: 'Requis: Ville - Type - Prix Max',
   };
 
   const currentDistricts = districtsByCity[searchParams.city] || [];
+const sortResults = (results) => {
+  const sorted = [...results];
+  switch (sortBy) {
+    case 'priceAsc':
+      return sorted.sort((a, b) => a.price - b.price);
+    case 'priceDesc':
+      return sorted.sort((a, b) => b.price - a.price);
+    case 'dateDesc':
+      return sorted.sort((a, b) => {
+        if (a.isNew && !b.isNew) return -1;
+        if (!a.isNew && b.isNew) return 1;
+        return b.score - a.score;
+      });
+    case 'score':
+    default:
+      return sorted.sort((a, b) => b.score - a.score);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -558,7 +606,19 @@ required: 'Requis: Ville - Type - Prix Max',
               {stats && mode === 'buy' && (
                 <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-2xl font-bold">{results.length} {t.results}</h2>
+                    <div className="flex items-center gap-4">
+  <h2 className="text-2xl font-bold">{results.length} {t.results}</h2>
+  <select
+    value={sortBy}
+    onChange={(e) => setSortBy(e.target.value)}
+    className="px-3 py-2 border rounded-lg bg-white"
+  >
+    <option value="score">{t.sortScore}</option>
+    <option value="priceAsc">{t.sortPriceAsc}</option>
+    <option value="priceDesc">{t.sortPriceDesc}</option>
+    <option value="dateDesc">{t.sortDateDesc}</option>
+  </select>
+</div>
                     <button onClick={exportToExcel} className="px-4 py-2 bg-green-600 text-white rounded-lg flex items-center gap-2">
                       <Download className="w-4 h-4" />
                       {t.export}
@@ -578,7 +638,7 @@ required: 'Requis: Ville - Type - Prix Max',
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {results.map((prop) => (
+                {sortResults(results).map((prop) => (
                   <div key={prop.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
                     <div 
                       className="relative h-48 bg-gray-200 cursor-pointer group"
