@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Menu, Download, MapPin, Maximize2, AlertCircle, Loader } from 'lucide-react';
 
 export default function Home() {
@@ -14,7 +14,7 @@ export default function Home() {
   const [sortBy, setSortBy] = useState('score');
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [savedSearches, setSavedSearches] = useState([]);
-const [showSavedSearches, setShowSavedSearches] = useState(false);
+  const [showSavedSearches, setShowSavedSearches] = useState(false);
   const [searchParams, setSearchParams] = useState({
     city: '',
     district: '',
@@ -28,6 +28,15 @@ const [showSavedSearches, setShowSavedSearches] = useState(false);
     keywords: [],
     numSites: 5
   });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('traxhome_searches');
+      if (saved) {
+        setSavedSearches(JSON.parse(saved));
+      }
+    }
+  }, []);
 
   const t = {
     vn: {
@@ -54,15 +63,11 @@ const [showSavedSearches, setShowSavedSearches] = useState(false);
       viewDetails: 'Xem chi tiết',
       export: 'Xuất Excel',
       lowestPrice: 'Giá thấp nhất',
-      sortBy: 'Sắp xếp theo',
-      sortScore: 'Điểm phù hợp',
-      sortPriceAsc: 'Giá tăng dần',
-      sortPriceDesc: 'Giá giảm dần',
       highestPrice: 'Giá cao nhất',
       loading: 'Đang tìm kiếm...',
       min: 'Tối thiểu',
       max: 'Tối đa',
-    required: 'Trường bắt buộc: Thành phố - Loại BDS - Giá tối đa',
+      required: 'Trường bắt buộc: Thành phố - Loại BDS - Giá tối đa',
       selectCity: 'Chọn thành phố',
       selectDistrict: 'Chọn quận/huyện',
       selectType: 'Chọn loại BDS',
@@ -75,19 +80,19 @@ const [showSavedSearches, setShowSavedSearches] = useState(false);
       sortPriceDesc: 'Giá giảm dần',
       sortDateDesc: 'Mới nhất',
       close: 'Đóng',
-contactAgent: 'Liên hệ môi giới',
-propertyDetails: 'Chi tiết BDS',
-postedOn: 'Ngày đăng',
-area: 'Diện tích',
-rooms: 'Phòng ngủ',
-bathrooms: 'Phòng tắm',
-viewOriginal: 'Xem bài gốc',
+      contactAgent: 'Liên hệ môi giới',
+      propertyDetails: 'Chi tiết BDS',
+      postedOn: 'Ngày đăng',
+      area: 'Diện tích',
+      rooms: 'Phòng ngủ',
+      bathrooms: 'Phòng tắm',
+      viewOriginal: 'Xem bài gốc',
       saveSearch: 'Lưu tìm kiếm',
-savedSearches: 'Tìm kiếm đã lưu',
-noSavedSearches: 'Chưa có tìm kiếm nào được lưu',
-loadSearch: 'Tải',
-deleteSearch: 'Xóa',
-searchSaved: 'Đã lưu tìm kiếm!',
+      savedSearches: 'Tìm kiếm đã lưu',
+      noSavedSearches: 'Chưa có tìm kiếm nào được lưu',
+      loadSearch: 'Tải',
+      deleteSearch: 'Xóa',
+      searchSaved: 'Đã lưu tìm kiếm!',
     },
     en: {
       menu: 'Menu',
@@ -113,15 +118,11 @@ searchSaved: 'Đã lưu tìm kiếm!',
       viewDetails: 'View Details',
       export: 'Export Excel',
       lowestPrice: 'Lowest Price',
-      sortBy: 'Sort by',
-      sortScore: 'Match Score',
-      sortPriceAsc: 'Price: Low to High',
-      sortPriceDesc: 'Price: High to Low',
       highestPrice: 'Highest Price',
       loading: 'Searching...',
       min: 'Min',
       max: 'Max',
-required: 'Required: City - Property Type - Max Price',
+      required: 'Required: City - Property Type - Max Price',
       selectCity: 'Select city',
       selectDistrict: 'Select district',
       selectType: 'Select type',
@@ -134,19 +135,19 @@ required: 'Required: City - Property Type - Max Price',
       sortPriceDesc: 'Price: High to Low',
       sortDateDesc: 'Newest First',
       close: 'Close',
-contactAgent: 'Contact Agent',
-propertyDetails: 'Property Details',
-postedOn: 'Posted on',
-area: 'Area',
-rooms: 'Bedrooms',
-bathrooms: 'Bathrooms',
-viewOriginal: 'View Original',
+      contactAgent: 'Contact Agent',
+      propertyDetails: 'Property Details',
+      postedOn: 'Posted on',
+      area: 'Area',
+      rooms: 'Bedrooms',
+      bathrooms: 'Bathrooms',
+      viewOriginal: 'View Original',
       saveSearch: 'Save Search',
-savedSearches: 'Saved Searches',
-noSavedSearches: 'No saved searches yet',
-loadSearch: 'Load',
-deleteSearch: 'Delete',
-searchSaved: 'Search saved!',
+      savedSearches: 'Saved Searches',
+      noSavedSearches: 'No saved searches yet',
+      loadSearch: 'Load',
+      deleteSearch: 'Delete',
+      searchSaved: 'Search saved!',
     },
     fr: {
       menu: 'Menu',
@@ -172,15 +173,11 @@ searchSaved: 'Search saved!',
       viewDetails: 'Détails',
       export: 'Exporter',
       lowestPrice: 'Prix Min',
-      sortBy: 'Trier par',
-      sortScore: 'Score',
-      sortPriceAsc: 'Prix croissant',
-      sortPriceDesc: 'Prix décroissant',
       highestPrice: 'Prix Max',
       loading: 'Recherche...',
       min: 'Min',
       max: 'Max',
-required: 'Requis: Ville - Type - Prix Max',
+      required: 'Requis: Ville - Type - Prix Max',
       selectCity: 'Choisir ville',
       selectDistrict: 'Choisir district',
       selectType: 'Choisir type',
@@ -193,26 +190,26 @@ required: 'Requis: Ville - Type - Prix Max',
       sortPriceDesc: 'Prix décroissant',
       sortDateDesc: 'Plus récent',
       close: 'Fermer',
-contactAgent: 'Contacter Agent',
-propertyDetails: 'Détails du bien',
-postedOn: 'Publié le',
-area: 'Surface',
-rooms: 'Chambres',
-bathrooms: 'Salle de bain',
-viewOriginal: 'Voir annonce originale',
+      contactAgent: 'Contacter Agent',
+      propertyDetails: 'Détails du bien',
+      postedOn: 'Publié le',
+      area: 'Surface',
+      rooms: 'Chambres',
+      bathrooms: 'Salle de bain',
+      viewOriginal: 'Voir annonce originale',
       saveSearch: 'Sauvegarder',
-savedSearches: 'Recherches sauvegardées',
-noSavedSearches: 'Aucune recherche sauvegardée',
-loadSearch: 'Charger',
-deleteSearch: 'Supprimer',
-searchSaved: 'Recherche sauvegardée!',
+      savedSearches: 'Recherches sauvegardées',
+      noSavedSearches: 'Aucune recherche sauvegardée',
+      loadSearch: 'Charger',
+      deleteSearch: 'Supprimer',
+      searchSaved: 'Recherche sauvegardée!',
     }
   }[language];
 
   const urgentKeywords = [
     { vn: 'Bán gấp', en: 'Urgent Sale', fr: 'Vente Urgente' },
-{ vn: 'Bán nhanh', en: 'Quick Sale', fr: 'Vente Express' },
-{ vn: 'Cần bán nhanh', en: 'Need Quick Sale', fr: 'Doit Vendre Vite' },
+    { vn: 'Bán nhanh', en: 'Quick Sale', fr: 'Vente Express' },
+    { vn: 'Cần bán nhanh', en: 'Need Quick Sale', fr: 'Doit Vendre Vite' },
     { vn: 'Thanh lý rẻ', en: 'Cheap Liquidation', fr: 'Liquidation Pas Cher' },
     { vn: 'Bất ngờ', en: 'Unexpected', fr: 'Inattendu' },
     { vn: 'Kẹt tiền', en: 'Need Money', fr: 'Besoin Argent' },
@@ -277,7 +274,7 @@ searchSaved: 'Recherche sauvegardée!',
   };
 
   const handleSearch = async () => {
- if (!searchParams.city || !searchParams.propertyType || !searchParams.priceMax) {
+    if (!searchParams.city || !searchParams.propertyType || !searchParams.priceMax) {
       setError(t.required);
       return;
     }
@@ -355,78 +352,54 @@ searchSaved: 'Recherche sauvegardée!',
   };
 
   const currentDistricts = districtsByCity[searchParams.city] || [];
-const sortResults = (results) => {
-  // Charger les recherches sauvegardées au démarrage
-useState(() => {
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('traxhome_searches');
-    if (saved) {
-      setSavedSearches(JSON.parse(saved));
+
+  const sortResults = (results) => {
+    const sorted = [...results];
+    switch (sortBy) {
+      case 'priceAsc':
+        return sorted.sort((a, b) => a.price - b.price);
+      case 'priceDesc':
+        return sorted.sort((a, b) => b.price - a.price);
+      case 'dateDesc':
+        return sorted.sort((a, b) => {
+          if (a.isNew && !b.isNew) return -1;
+          if (!a.isNew && b.isNew) return 1;
+          return b.score - a.score;
+        });
+      case 'score':
+      default:
+        return sorted.sort((a, b) => b.score - a.score);
     }
-  }
-}, []);
+  };
 
   const saveCurrentSearch = () => {
-  const searchName = `${searchParams.city} - ${searchParams.propertyType} - ${searchParams.priceMax} Tỷ`;
-  const newSearch = {
-    id: Date.now(),
-    name: searchName,
-    params: { ...searchParams },
-    date: new Date().toLocaleDateString()
+    const searchName = `${searchParams.city} - ${searchParams.propertyType} - ${searchParams.priceMax} Tỷ`;
+    const newSearch = {
+      id: Date.now(),
+      name: searchName,
+      params: { ...searchParams },
+      date: new Date().toLocaleDateString()
+    };
+    const updated = [...savedSearches, newSearch];
+    setSavedSearches(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('traxhome_searches', JSON.stringify(updated));
+    }
+    alert(t.searchSaved);
   };
-  const updated = [...savedSearches, newSearch];
-  setSavedSearches(updated);
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('traxhome_searches', JSON.stringify(updated));
-  }
-  alert(t.searchSaved);
-};
 
-const loadSavedSearch = (search) => {
-  setSearchParams(search.params);
-  setShowSavedSearches(false);
-};
+  const loadSavedSearch = (search) => {
+    setSearchParams(search.params);
+    setShowSavedSearches(false);
+  };
 
-const deleteSavedSearch = (id) => {
-  const updated = savedSearches.filter(s => s.id !== id);
-  setSavedSearches(updated);
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('traxhome_searches', JSON.stringify(updated));
-  }
-};
-  const updated = [...savedSearches, newSearch];
-  setSavedSearches(updated);
-  localStorage.setItem('traxhome_searches', JSON.stringify(updated));
-  alert(t.searchSaved);
-};
-
-const loadSavedSearch = (search) => {
-  setSearchParams(search.params);
-  setShowSavedSearches(false);
-};
-
-const deleteSavedSearch = (id) => {
-  const updated = savedSearches.filter(s => s.id !== id);
-  setSavedSearches(updated);
-  localStorage.setItem('traxhome_searches', JSON.stringify(updated));
-};
-  const sorted = [...results];
-  switch (sortBy) {
-    case 'priceAsc':
-      return sorted.sort((a, b) => a.price - b.price);
-    case 'priceDesc':
-      return sorted.sort((a, b) => b.price - a.price);
-    case 'dateDesc':
-      return sorted.sort((a, b) => {
-        if (a.isNew && !b.isNew) return -1;
-        if (!a.isNew && b.isNew) return 1;
-        return b.score - a.score;
-      });
-    case 'score':
-    default:
-      return sorted.sort((a, b) => b.score - a.score);
-  }
-};
+  const deleteSavedSearch = (id) => {
+    const updated = savedSearches.filter(s => s.id !== id);
+    setSavedSearches(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('traxhome_searches', JSON.stringify(updated));
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -479,10 +452,45 @@ const deleteSavedSearch = (id) => {
         </div>
       </header>
 
+      {showSavedSearches && (
+        <div className="max-w-6xl mx-auto px-4 py-6">
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-xl font-bold mb-4">⭐ {t.savedSearches}</h2>
+            {savedSearches.length === 0 ? (
+              <p className="text-gray-500">{t.noSavedSearches}</p>
+            ) : (
+              <div className="space-y-3">
+                {savedSearches.map((search) => (
+                  <div key={search.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium">{search.name}</p>
+                      <p className="text-sm text-gray-500">{search.date}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => loadSavedSearch(search)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        {t.loadSearch}
+                      </button>
+                      <button
+                        onClick={() => deleteSavedSearch(search.id)}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                      >
+                        {t.deleteSearch}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {showSearch && (
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
-            {/* Mode Achat/Vente */}
             <div className="flex gap-4">
               <button
                 onClick={() => setMode('buy')}
@@ -502,7 +510,6 @@ const deleteSavedSearch = (id) => {
               </button>
             </div>
 
-            {/* Section: Vị trí & Loại BDS */}
             <div className="border-b pb-4">
               <h3 className="text-sm font-semibold text-gray-500 mb-3">📍 {language === 'vn' ? 'Vị trí & Loại BDS' : language === 'fr' ? 'Localisation & Type' : 'Location & Type'}</h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -557,7 +564,6 @@ const deleteSavedSearch = (id) => {
               </div>
             </div>
 
-            {/* Section: Prix */}
             <div className="border-b pb-4">
               <h3 className="text-sm font-semibold text-gray-500 mb-3">💰 {language === 'vn' ? 'Giá & Tính năng Cơ bản' : language === 'fr' ? 'Prix & Caractéristiques' : 'Price & Features'}</h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -644,7 +650,6 @@ const deleteSavedSearch = (id) => {
               </div>
             </div>
 
-            {/* Section: Mots-clés urgents */}
             <div>
               <label className="block text-sm font-bold text-red-600 mb-1">
                 🔥 {t.keywords}
@@ -669,7 +674,6 @@ const deleteSavedSearch = (id) => {
               </div>
             </div>
 
-            {/* Erreur */}
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-2 text-red-700">
                 <AlertCircle className="w-5 h-5" />
@@ -677,27 +681,28 @@ const deleteSavedSearch = (id) => {
               </div>
             )}
 
-            {/* Footer avec bouton recherche */}
             <div className="flex justify-between items-center pt-4 border-t bg-red-50 -mx-6 -mb-6 px-6 py-4 rounded-b-xl">
               <div>
                 <p className="text-sm font-semibold text-red-600">⚠️ {language === 'vn' ? 'Trường bắt buộc:' : language === 'fr' ? 'Champs requis:' : 'Required fields:'}</p>
                 <p className="text-sm text-red-600">• {t.city} • {t.propertyType} • {t.priceMax}</p>
               </div>
-              <button
-                onClick={handleSearch}
-                disabled={loading}
-                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-bold text-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 flex items-center gap-2 shadow-lg"
-              >
-                {loading ? <Loader className="w-6 h-6 animate-spin" /> : <Search className="w-6 h-6" />}
-                {loading ? t.loading : t.search}
-              </button>
-              <button
-                onClick={saveCurrentSearch}
-                disabled={!searchParams.city || !searchParams.propertyType || !searchParams.priceMax}
-                className="px-4 py-4 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 disabled:opacity-50"
-              >
-                ⭐ {t.saveSearch}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={saveCurrentSearch}
+                  disabled={!searchParams.city || !searchParams.propertyType || !searchParams.priceMax}
+                  className="px-4 py-4 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 disabled:opacity-50"
+                >
+                  ⭐ {t.saveSearch}
+                </button>
+                <button
+                  onClick={handleSearch}
+                  disabled={loading}
+                  className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-bold text-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 flex items-center gap-2 shadow-lg"
+                >
+                  {loading ? <Loader className="w-6 h-6 animate-spin" /> : <Search className="w-6 h-6" />}
+                  {loading ? t.loading : t.search}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -716,18 +721,18 @@ const deleteSavedSearch = (id) => {
                 <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-4">
-  <h2 className="text-2xl font-bold">{results.length} {t.results}</h2>
-  <select
-    value={sortBy}
-    onChange={(e) => setSortBy(e.target.value)}
-    className="px-3 py-2 border rounded-lg bg-white"
-  >
-    <option value="score">{t.sortScore}</option>
-    <option value="priceAsc">{t.sortPriceAsc}</option>
-    <option value="priceDesc">{t.sortPriceDesc}</option>
-    <option value="dateDesc">{t.sortDateDesc}</option>
-  </select>
-</div>
+                      <h2 className="text-2xl font-bold">{results.length} {t.results}</h2>
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="px-3 py-2 border rounded-lg bg-white"
+                      >
+                        <option value="score">{t.sortScore}</option>
+                        <option value="priceAsc">{t.sortPriceAsc}</option>
+                        <option value="priceDesc">{t.sortPriceDesc}</option>
+                        <option value="dateDesc">{t.sortDateDesc}</option>
+                      </select>
+                    </div>
                     <button onClick={exportToExcel} className="px-4 py-2 bg-green-600 text-white rounded-lg flex items-center gap-2">
                       <Download className="w-4 h-4" />
                       {t.export}
@@ -824,7 +829,7 @@ const deleteSavedSearch = (id) => {
           )}
         </div>
       )}
-       {/* Modal détails */}
+
       {selectedProperty && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
