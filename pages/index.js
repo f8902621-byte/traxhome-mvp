@@ -737,37 +737,20 @@ const sortResults = (results) => {
           )}
         </div>
       )}
-        {/* Modal détails */}
+       {/* Modal détails */}
       {selectedProperty && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Header */}
             <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
               <h2 className="text-xl font-bold">{t.propertyDetails}</h2>
-              <button 
-                onClick={() => setSelectedProperty(null)}
-                className="p-2 hover:bg-gray-100 rounded-full"
-              >
-                ✕
-              </button>
+              <button onClick={() => setSelectedProperty(null)} className="p-2 hover:bg-gray-100 rounded-full">✕</button>
             </div>
-
-            {/* Image */}
             <div className="relative h-64 md:h-96 bg-gray-200">
-              <img 
-                src={selectedProperty.imageUrl} 
-                alt={selectedProperty.title}
-                className="w-full h-full object-cover"
-              />
+              <img src={selectedProperty.imageUrl} alt={selectedProperty.title} className="w-full h-full object-cover" />
               {selectedProperty.hasUrgentKeyword && (
-                <div className="absolute top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-full font-bold animate-pulse">
-                  {t.urgentSale}
-                </div>
+                <div className="absolute top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-full font-bold animate-pulse">{t.urgentSale}</div>
               )}
-    </div>
             </div>
-
-            {/* Content */}
             <div className="p-6 space-y-6">
               <div>
                 <h3 className="text-2xl font-bold mb-2">{selectedProperty.title}</h3>
@@ -778,20 +761,15 @@ const sortResults = (results) => {
                   )}
                 </div>
               </div>
-
               <div className="bg-blue-50 p-4 rounded-lg">
                 <div className="flex justify-between mb-2">
                   <span className="font-medium">{t.score}</span>
                   <span className="font-bold text-lg">{selectedProperty.score}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div
-                    className={`h-3 rounded-full ${selectedProperty.score >= 80 ? 'bg-green-500' : selectedProperty.score >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                    style={{ width: `${selectedProperty.score}%` }}
-                  />
+                  <div className={`h-3 rounded-full ${selectedProperty.score >= 80 ? 'bg-green-500' : selectedProperty.score >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${selectedProperty.score}%` }} />
                 </div>
               </div>
-
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-gray-50 p-4 rounded-lg text-center">
                   <p className="text-2xl font-bold text-blue-600">{selectedProperty.floorArea}</p>
@@ -810,35 +788,20 @@ const sortResults = (results) => {
                   <p className="text-sm text-gray-600">{t.postedOn}</p>
                 </div>
               </div>
-
-              <div 
-                className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
-                onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedProperty.address)}`, '_blank')}
-              >
+              <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedProperty.address)}`, '_blank')}>
                 <MapPin className="w-6 h-6 text-blue-600 mt-0.5" />
                 <div>
                   <p className="font-medium">{selectedProperty.address}</p>
                   <p className="text-sm text-blue-600">Voir sur Google Maps →</p>
                 </div>
               </div>
-
               <div className="flex gap-4 pt-4 border-t">
-                <button
-                  onClick={() => window.open(selectedProperty.url, '_blank')}
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700"
-                >
-                  {t.viewOriginal}
-                </button>
-                <button
-                  onClick={() => setSelectedProperty(null)}
-                  className="px-6 py-3 border border-gray-300 rounded-lg font-medium hover:bg-gray-50"
-                >
-                  {t.close}
-                </button>
-</div>
+                <button onClick={() => window.open(selectedProperty.url, '_blank')} className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700">{t.viewOriginal}</button>
+                <button onClick={() => setSelectedProperty(null)} className="px-6 py-3 border border-gray-300 rounded-lg font-medium hover:bg-gray-50">{t.close}</button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
       )}
     </div>
   );
