@@ -737,8 +737,7 @@ const sortResults = (results) => {
           )}
         </div>
       )}
-    </div>
-{/* Modal détails */}
+        {/* Modal détails */}
       {selectedProperty && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -765,6 +764,7 @@ const sortResults = (results) => {
                   {t.urgentSale}
                 </div>
               )}
+    </div>
             </div>
 
             {/* Content */}
