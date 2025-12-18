@@ -366,14 +366,6 @@ useState(() => {
   }
 }, []);
 
-const saveCurrentSearch = () => {
-  const searchName = `${searchParams.city} - ${searchParams.propertyType} - ${searchParams.priceMax} Tỷ`;
-  const newSearch = {
-    id: Date.now(),
-    name: searchName,
-    params: { ...searchParams },
-    date: new Date().toLocaleDateString()
-  };
   const saveCurrentSearch = () => {
   const searchName = `${searchParams.city} - ${searchParams.propertyType} - ${searchParams.priceMax} Tỷ`;
   const newSearch = {
