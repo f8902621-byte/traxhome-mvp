@@ -27,6 +27,7 @@ export default function Home() {
     daysListed: '',
     legalStatus: '',
     customKeyword: '',
+    sources: ['batdongsan'],
     keywords: [],
     numSites: 5
   });
@@ -61,6 +62,10 @@ legalSoDo: 'Sổ Đỏ',
 legalNone: 'Chưa có sổ',
       customKeyword: 'Thêm từ khóa',
 customKeywordPlaceholder: 'Nhập từ khóa khác...',
+      sources: 'Nguồn dữ liệu',
+sourcesDesc: 'Chọn các trang web để tìm kiếm',
+premiumSource: 'Premium',
+comingSoon: 'Sắp có',
       keywords: 'Từ khóa Khẩn cấp (QUAN TRỌNG)',
       keywordsDesc: 'Những từ này cho thấy người bán gấp = cơ hội đàm phán tốt nhất!',
       search: 'Tìm kiếm',
@@ -123,6 +128,10 @@ legalSoDo: 'Red Book',
 legalNone: 'No documents',
       customKeyword: 'Add keyword',
 customKeywordPlaceholder: 'Enter custom keyword...',
+      sources: 'Data Sources',
+sourcesDesc: 'Select websites to search',
+premiumSource: 'Premium',
+comingSoon: 'Coming Soon',
       keywords: 'Urgent Keywords (IMPORTANT)',
       keywordsDesc: 'These words indicate desperate sellers = best negotiation opportunity!',
       search: 'Search',
@@ -185,6 +194,10 @@ legalSoDo: 'Carnet Rouge',
 legalNone: 'Sans document',
       customKeyword: 'Ajouter mot-clé',
 customKeywordPlaceholder: 'Entrer un mot-clé...',
+      sources: 'Sources de données',
+sourcesDesc: 'Sélectionner les sites à rechercher',
+premiumSource: 'Premium',
+comingSoon: 'Bientôt',
       keywords: 'Mots-clés Urgents (IMPORTANT)',
       keywordsDesc: 'Ces mots indiquent un vendeur pressé = meilleure opportunité de négociation!',
       search: 'Rechercher',
@@ -262,7 +275,14 @@ customKeywordPlaceholder: 'Entrer un mot-clé...',
     { vn: 'Đất nghỉ dưỡng', en: 'Resort Land', fr: 'Terrain Vacances' },
     { vn: 'Bất động sản khác', en: 'Other', fr: 'Autre' }
   ];
-
+  const availableSources = [
+    { id: 'batdongsan', name: 'Batdongsan.com.vn', premium: true, active: true },
+    { id: 'chotot', name: 'Chotot.com', premium: false, active: false },
+    { id: 'homedy', name: 'Homedy.com', premium: false, active: false },
+    { id: 'nhadat247', name: 'Nhadat247.com.vn', premium: false, active: false },
+    { id: 'muaban', name: 'Muaban.net', premium: false, active: false },
+    { id: 'alonhadat', name: 'Alonhadat.com.vn', premium: false, active: false },
+  ];
   const vietnamCities = [
     { vn: 'Hồ Chí Minh', en: 'Ho Chi Minh City', fr: 'Hô-Chi-Minh-Ville' },
     { vn: 'Hà Nội', en: 'Hanoi', fr: 'Hanoï' },
@@ -514,6 +534,33 @@ customKeywordPlaceholder: 'Entrer un mot-clé...',
       {showSearch && (
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
+        {/* Sources */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  🌐 {t.sources}
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {availableSources.map((source) => (
+                    <button
+                      key={source.id}
+                      type="button"
+                      onClick={() => {
+                        const newSources = searchParams.sources.includes(source.id)
+                          ? searchParams.sources.filter(s => s !== source.id)
+                          : [...searchParams.sources, source.id];
+                        setSearchParams({ ...searchParams, sources: newSources });
+                      }}
+                      className={`px-3 py-1 rounded-full text-sm ${
+                        searchParams.sources.includes(source.id)
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {source.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
             <div className="flex gap-4">
               <button
                 onClick={() => setMode('buy')}
