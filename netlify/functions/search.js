@@ -306,6 +306,15 @@ exports.handler = async (event, context) => {
     if (sources && sources.includes('nhadat247')) {
       const nhadat247Results = await fetchNhadat247(body);
       results = [...results, ...nhadat247Results];
+      // Appliquer les filtres de prix aux nouvelles données
+      if (priceMin) {
+        const priceMinVND = parseFloat(priceMin) * 1000000000;
+        results = results.filter(item => item.price >= priceMinVND);
+      }
+      if (priceMax) {
+        const priceMaxVND = parseFloat(priceMax) * 1000000000;
+        results = results.filter(item => item.price <= priceMaxVND);
+      }
     }
         // Filtrer par sources
     if (sources && sources.length > 0) {
