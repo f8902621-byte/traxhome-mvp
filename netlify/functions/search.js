@@ -1,6 +1,51 @@
 const APIFY_API_TOKEN = process.env.APIFY_API_TOKEN;
 const APIFY_ACTOR_ID = process.env.APIFY_ACTOR_ID;
-
+// ============================================
+// CHOTOT API INTEGRATION
+// ============================================
+async function fetchChotot(params) {
+  const { city, propertyType, priceMin, priceMax } = params;
+  
+  const regionMapping = {
+    'ho-chi-minh': '2011',
+    'ha-noi': '1011',
+    'da-nang': '5011',
+    'binh-duong': '2012',
+  };
+  
+  const urlParams = new URLSearchParams();
+  urlParams.append('limit', '30');
+  urlParams.append('cg', '1010');
+  urlParams.append('region_v2', regionMapping[city] || '2011');
+  
+  const minPrice = priceMin ? priceMin * 1000000000 : 0;
+  const maxPrice = priceMax ? priceMax * 1000000000 : 100000000000;
+  urlParams.append('price', `${minPrice}-${maxPrice}`);
+  
+  const apiUrl = `https://gateway.chotot.com/v1/public/ad-listing?${urlParams}`;
+  
+  try {
+    const response = await fetch(apiUrl);
+    const data = await response.json();
+    
+    return (data.ads || []).map(ad => ({
+      title: ad.subject || 'Không có tiêu đề',
+      price: ad.price || 0,
+      priceFormatted: ad.price_string || '',
+      area: ad.size || ad.area || 0,
+      address: ad.detail_address || ad.area_name || '',
+      bedrooms: ad.rooms || null,
+      description: ad.body || '',
+      thumbnail: ad.image || '',
+      url: `https://www.chotot.com/${ad.list_id}.htm`,
+      source: 'chotot.com',
+      postedDate: ad.list_time ? new Date(ad.list_time).toISOString() : null,
+    }));
+  } catch (error) {
+    console.error('Chotot error:', error);
+    return [];
+  }
+}
 exports.handler = async (event, context) => {
   const headers = {
     'Content-Type': 'application/json',
@@ -200,7 +245,13 @@ exports.handler = async (event, context) => {
       // Limiter entre 0 et 100
       return Math.min(100, Math.max(0, score));
     };
-
+ // ============================================
+    // AJOUTER RÉSULTATS CHOTOT SI DEMANDÉ
+    // ============================================
+    if (sources && sources.includes('chotot')) {
+      const chototResults = await fetchChotot(body);
+      results = [...results, ...chototResults];
+    }
         // Filtrer par sources
     if (sources && sources.length > 0) {
       results = results.filter(item => {
