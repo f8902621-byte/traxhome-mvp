@@ -46,6 +46,46 @@ async function fetchChotot(params) {
     return [];
   }
 }
+// ============================================
+// NHADAT247 API INTEGRATION
+// ============================================
+async function fetchNhadat247(params) {
+  const { city, propertyType, priceMin, priceMax } = params;
+  
+  const NHADAT247_ACTOR_ID = 'outlandish_bookcases/nhadat247-scraper';
+  
+  try {
+    const datasetUrl = `https://api.apify.com/v2/acts/${NHADAT247_ACTOR_ID}/runs/last/dataset/items?token=${APIFY_API_TOKEN}`;
+    const response = await fetch(datasetUrl);
+    
+    if (!response.ok) {
+      console.error('Nhadat247 API error:', response.status);
+      return [];
+    }
+    
+    const data = await response.json();
+    
+    return (data || []).map(item => ({
+      id: item.id || `nhadat247_${Date.now()}_${Math.random()}`,
+      title: item.title || 'Không có tiêu đề',
+      price: item.price || 0,
+      priceFormatted: item.priceText || '',
+      floorAreaSqm: item.area || 0,
+      area: item.area || 0,
+      address: item.address || item.district || '',
+      bedrooms: item.bedrooms || null,
+      bathrooms: item.bathrooms || null,
+      thumbnail: item.imageUrl || '',
+      images: item.imageUrl ? [item.imageUrl] : [],
+      url: item.url || '',
+      source: 'nhadat247.com.vn',
+      postedOn: item.postedDate || '',
+    }));
+  } catch (error) {
+    console.error('Nhadat247 error:', error);
+    return [];
+  }
+}
 exports.handler = async (event, context) => {
   const headers = {
     'Content-Type': 'application/json',
@@ -251,6 +291,13 @@ exports.handler = async (event, context) => {
     if (sources && sources.includes('chotot')) {
       const chototResults = await fetchChotot(body);
       results = [...results, ...chototResults];
+    }
+    // ============================================
+    // AJOUTER RÉSULTATS NHADAT247 SI DEMANDÉ
+    // ============================================
+    if (sources && sources.includes('nhadat247')) {
+      const nhadat247Results = await fetchNhadat247(body);
+      results = [...results, ...nhadat247Results];
     }
         // Filtrer par sources
     if (sources && sources.length > 0) {
