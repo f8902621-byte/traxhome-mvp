@@ -277,7 +277,7 @@ comingSoon: 'Bientôt',
   ];
   const availableSources = [
     { id: 'batdongsan', name: 'Batdongsan.com.vn', premium: true, active: true },
-    { id: 'chotot', name: 'Chotot.com', premium: false, active: false },
+    { id: 'chotot', name: 'Chotot.com', premium: false, active: true },
     { id: 'homedy', name: 'Homedy.com', premium: false, active: false },
     { id: 'nhadat247', name: 'Nhadat247.com.vn', premium: false, active: false },
     { id: 'muaban', name: 'Muaban.net', premium: false, active: false },
