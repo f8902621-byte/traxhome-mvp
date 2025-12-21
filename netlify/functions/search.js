@@ -357,26 +357,34 @@ function applyFilters(results, filters) {
 }
 
 // ============================================
-// DÉDUPLICATION
+// DÉDUPLICATION AMÉLIORÉE
 // ============================================
 function deduplicateResults(results) {
   const seenIds = new Set();
-  const seenTitles = new Set();
+  const seenProperties = new Set();
   
   return results.filter(item => {
     // Dédupliquer par ID exact
     if (item.id && seenIds.has(item.id)) return false;
     if (item.id) seenIds.add(item.id);
     
-    // Dédupliquer par titre + prix (même bien sur différentes sources)
-    const normalizedTitle = (item.title || '')
-      .toLowerCase()
-      .replace(/[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/g, '')
-      .substring(0, 40);
-    const titleKey = `${normalizedTitle}_${item.price}`;
+    // Dédupliquer par caractéristiques du bien (surface + prix + mots-clés adresse)
+    const area = item.floorAreaSqm || item.area || 0;
+    const price = item.price || 0;
     
-    if (seenTitles.has(titleKey)) return false;
-    seenTitles.add(titleKey);
+    // Extraire les mots-clés d'adresse du titre (district, rue, projet)
+    const titleLower = (item.title || '').toLowerCase();
+    const addressKeywords = titleLower
+      .replace(/bán|gấp|nhanh|cần|tiền|kẹt|thanh|lý|rẻ|lỗ|ngộp|căn hộ|chung cư|nhà|đất/g, '') // Supprimer mots génériques
+      .replace(/[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ\s]/g, '')
+      .trim()
+      .substring(0, 30);
+    
+    // Clé unique : surface arrondie + prix arrondi + adresse simplifiée
+    const propertyKey = `${Math.round(area)}_${Math.round(price/100000000)}_${addressKeywords}`;
+    
+    if (seenProperties.has(propertyKey)) return false;
+    seenProperties.add(propertyKey);
     
     return true;
   });
