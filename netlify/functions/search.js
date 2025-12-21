@@ -221,7 +221,7 @@ function applyFilters(results, filters) {
     console.log(`Après filtre prix max (${priceMax} tỷ): ${filtered.length} résultats`);
   }
   
-  // 3. FILTRE VILLE (avec aliases)
+ // 3. FILTRE VILLE (avec aliases) - VERSION TOLÉRANTE
   if (city) {
     filtered = filtered.filter(item => {
       const textToSearch = [
@@ -230,6 +230,9 @@ function applyFilters(results, filters) {
         item.district || '',
         item.title || ''
       ].join(' ');
+      
+      // Si aucune info de localisation, on garde le résultat (tolérant)
+      if (!textToSearch.trim()) return true;
       
       return cityMatches(city, textToSearch);
     });
