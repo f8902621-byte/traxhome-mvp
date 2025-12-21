@@ -122,7 +122,8 @@ async function fetchBatdongsan(params) {
   console.log(`Batdongsan URL: ${searchUrl}`);
   
   const input = {
-    directUrls: [searchUrl],
+    country: "vn",
+    startUrls: [searchUrl],
     maxItems: 30, // Limiter pour rester sous 26s timeout
   };
   
