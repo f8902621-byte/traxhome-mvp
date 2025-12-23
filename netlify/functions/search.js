@@ -1,12 +1,10 @@
-const APIFY_API_TOKEN = process.env.APIFY_API_TOKEN;
+// ============================================
+// TRAXHOME SEARCH - VERSION CHOTOT UNIQUEMENT
+// 100% GRATUIT - Pas de frais Apify
+// ============================================
 
 // ============================================
-// CONFIGURATION SCRAPERS
-// ============================================
-const PROPERTYGURU_ACTOR_ID = 'fatihtahta~propertyguru-scraper-ddproperty-batdongsan';
-
-// ============================================
-// MAPPING DES VILLES
+// MAPPING DES VILLES → CODES RÉGION CHOTOT
 // ============================================
 const CHOTOT_REGIONS = {
   'hồ chí minh': '13000',
@@ -24,24 +22,11 @@ const CHOTOT_REGIONS = {
   'bắc ninh': '12300',
   'thanh hóa': '11000',
   'nghệ an': '11100',
-};
-
-const BATDONGSAN_CITIES = {
-  'hồ chí minh': 'tp-hcm',
-  'hà nội': 'ha-noi',
-  'đà nẵng': 'da-nang',
-  'bình dương': 'binh-duong',
-  'đồng nai': 'dong-nai',
-  'hải phòng': 'hai-phong',
-  'cần thơ': 'can-tho',
-  'khánh hòa': 'khanh-hoa',
-  'bà rịa - vũng tàu': 'ba-ria-vung-tau',
-  'quảng ninh': 'quang-ninh',
-  'lâm đồng': 'lam-dong',
+  'thừa thiên huế': '15300',
 };
 
 const CITY_ALIASES = {
-  'hồ chí minh': ['hcm', 'tphcm', 'sài gòn', 'saigon', 'sg', 'ho chi minh'],
+  'hồ chí minh': ['hcm', 'tphcm', 'sài gòn', 'saigon', 'sg', 'ho chi minh', 'hô chi minh'],
   'hà nội': ['hanoi', 'hn', 'ha noi'],
   'đà nẵng': ['danang', 'đn', 'da nang'],
   'bình dương': ['binh duong', 'bd'],
@@ -52,6 +37,7 @@ const CITY_ALIASES = {
   'bà rịa - vũng tàu': ['vung tau', 'brvt', 'ba ria'],
   'quảng ninh': ['quang ninh', 'ha long', 'hạ long'],
   'lâm đồng': ['lam dong', 'da lat', 'đà lạt'],
+  'thừa thiên huế': ['hue', 'huế', 'thua thien hue'],
 };
 
 function normalizeCity(city) {
@@ -76,120 +62,30 @@ function getChototRegion(city) {
   return CHOTOT_REGIONS[normalized] || '13000';
 }
 
-function getBatdongsanCity(city) {
-  const normalized = normalizeCity(city);
-  return BATDONGSAN_CITIES[normalized] || 'tp-hcm';
-}
-
 // ============================================
-// CONSTRUIRE URL BATDONGSAN
-// ============================================
-function buildBatdongsanUrl(params) {
-  const { city, propertyType, priceMax } = params;
-  
-  const citySlug = getBatdongsanCity(city);
-  
-  // Type de bien
-  let typeSlug = 'ban-can-ho-chung-cu'; // Par défaut: appartement
-  if (propertyType) {
-    const type = propertyType.toLowerCase();
-    if (type.includes('nhà') || type.includes('house')) {
-      typeSlug = 'ban-nha-rieng';
-    } else if (type.includes('biệt thự') || type.includes('villa')) {
-      typeSlug = 'ban-biet-thu';
-    } else if (type.includes('đất') || type.includes('land')) {
-      typeSlug = 'ban-dat';
-    }
-  }
-  
-  let url = `https://batdongsan.com.vn/${typeSlug}-${citySlug}`;
-  
-  // Prix max
-  if (priceMax) {
-    url += `?gcn=${priceMax}-ty`;
-  }
-  
-  return url;
-}
-
-// ============================================
-// BATDONGSAN VIA PROPERTYGURU SCRAPER
-// ============================================
-async function fetchBatdongsan(params) {
-  const { city, propertyType, priceMax } = params;
-  
-  const searchUrl = buildBatdongsanUrl({ city, propertyType, priceMax });
-  console.log(`Batdongsan URL: ${searchUrl}`);
-  
-  const input = {
-    country: "vn",
-    startUrls: [searchUrl],
-    maxItems: 30, // Limiter pour rester sous 26s timeout
-  };
-  
-  try {
-    // Lancer le scraper en mode synchrone (max 25s pour rester sous timeout Netlify)
-    const response = await fetch(
-      `https://api.apify.com/v2/acts/${PROPERTYGURU_ACTOR_ID}/run-sync-get-dataset-items?token=${APIFY_API_TOKEN}&timeout=25`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input),
-      }
-    );
-    
-    if (!response.ok) {
-      console.error(`Batdongsan API error: ${response.status}`);
-      return [];
-    }
-    
-    const data = await response.json();
-    console.log(`Batdongsan: ${data.length} résultats`);
-    
-    return (data || []).map(item => ({
-      id: `batdongsan_${item.id || Math.random().toString(36).substr(2, 9)}`,
-      title: item.title || '',
-      price: item.price || 0,
-      area: item.floorAreaSqm || 0,
-      district: item.address || '',
-      city: city || '',
-      bedrooms: item.bedrooms || null,
-      bathrooms: item.bathrooms || null,
-      thumbnail: item.thumbnail || '',
-      images: item.images || [],
-      url: item.url || '',
-      source: 'batdongsan.com.vn',
-      postedOn: item.postedOn || '',
-      pricePerM2: item.pricePerSqm || null,
-    }));
-    
-  } catch (error) {
-    console.error('Batdongsan error:', error.message);
-    return [];
-  }
-}
-
-// ============================================
-// CHOTOT API - 300 RÉSULTATS
+// CHOTOT API - 300 RÉSULTATS (GRATUIT)
 // ============================================
 async function fetchChotot(params) {
   const { city, priceMin, priceMax, sortBy } = params;
   
   const regionCode = getChototRegion(city);
-  console.log(`Chotot: ville="${city}" → region=${regionCode}`);
+  const normalizedCity = normalizeCity(city);
+  console.log(`Chotot: ville="${city}" → normalized="${normalizedCity}" → region=${regionCode}`);
   
   const baseParams = new URLSearchParams();
-  baseParams.append('cg', '1000');
+  baseParams.append('cg', '1000'); // Catégorie immobilier
   baseParams.append('region_v2', regionCode);
-  baseParams.append('st', 's,k');
+  baseParams.append('st', 's,k'); // Statut: à vendre
   baseParams.append('limit', '50');
   
+  // Filtre prix
   if (priceMin || priceMax) {
     const minPrice = priceMin ? Math.round(parseFloat(priceMin) * 1000000000) : 0;
     const maxPrice = priceMax ? Math.round(parseFloat(priceMax) * 1000000000) : 999999999999;
     baseParams.append('price', `${minPrice}-${maxPrice}`);
   }
   
+  // Tri
   if (sortBy === 'price_asc') {
     baseParams.append('sort_by', 'price');
     baseParams.append('sort_dir', 'asc');
@@ -198,6 +94,7 @@ async function fetchChotot(params) {
     baseParams.append('sort_dir', 'desc');
   }
   
+  // Pagination: 6 pages x 50 = 300 résultats max
   const allAds = [];
   const offsets = [0, 50, 100, 150, 200, 250];
   
@@ -209,7 +106,7 @@ async function fetchChotot(params) {
       
       if (data.ads && data.ads.length > 0) {
         allAds.push(...data.ads);
-        console.log(`Chotot offset=${offset}: +${data.ads.length}`);
+        console.log(`Chotot offset=${offset}: +${data.ads.length} (total API: ${data.total || '?'})`);
       } else {
         break;
       }
@@ -221,10 +118,10 @@ async function fetchChotot(params) {
   console.log(`Chotot TOTAL: ${allAds.length}`);
   
   return allAds
-    .filter(ad => ad.price && ad.price > 0)
+    .filter(ad => ad.price && ad.price > 0) // Exclure prix "à négocier"
     .map(ad => ({
       id: `chotot_${ad.list_id}`,
-      title: ad.subject || '',
+      title: ad.subject || 'Không có tiêu đề',
       price: ad.price || 0,
       area: ad.size || ad.area || 0,
       district: ad.area_name || '',
@@ -241,26 +138,30 @@ async function fetchChotot(params) {
 }
 
 // ============================================
-// FILTRES & DÉDUPLICATION
+// FILTRES
 // ============================================
 function applyFilters(results, filters) {
   const { propertyType, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms } = filters;
   let filtered = [...results];
   
+  // Filtre prix min
   if (priceMin) {
     const min = parseFloat(priceMin) * 1000000000;
     filtered = filtered.filter(item => item.price >= min);
   }
   
+  // Filtre prix max
   if (priceMax) {
     const max = parseFloat(priceMax) * 1000000000;
     filtered = filtered.filter(item => item.price > 0 && item.price <= max);
   }
   
+  // Filtre surface min
   if (livingAreaMin) {
     filtered = filtered.filter(item => (item.area || 0) >= parseInt(livingAreaMin));
   }
   
+  // Filtre surface max
   if (livingAreaMax) {
     filtered = filtered.filter(item => {
       const area = item.area || 0;
@@ -268,13 +169,16 @@ function applyFilters(results, filters) {
     });
   }
   
+  // Filtre chambres
   if (bedrooms) {
     filtered = filtered.filter(item => item.bedrooms >= parseInt(bedrooms));
   }
   
+  // Filtre type de bien
   if (propertyType && !propertyType.toLowerCase().includes('tất cả')) {
     const type = propertyType.toLowerCase();
     let keywords = [];
+    
     if (type.includes('căn hộ') || type.includes('chung cư')) {
       keywords = ['căn hộ', 'chung cư', 'apartment', 'cc', 'ccmn'];
     } else if (type.includes('biệt thự')) {
@@ -283,19 +187,29 @@ function applyFilters(results, filters) {
       keywords = ['nhà'];
     } else if (type.includes('đất')) {
       keywords = ['đất'];
+    } else if (type.includes('studio')) {
+      keywords = ['studio'];
+    } else if (type.includes('shophouse')) {
+      keywords = ['shophouse'];
     }
     
     if (keywords.length > 0) {
+      const beforeFilter = filtered.length;
       filtered = filtered.filter(item => {
-        const t = (item.title || '').toLowerCase();
-        return keywords.some(k => t.includes(k));
+        const title = (item.title || '').toLowerCase();
+        const propType = (item.propertyType || '').toLowerCase();
+        return keywords.some(k => title.includes(k) || propType.includes(k));
       });
+      console.log(`Filtre type "${propertyType}": ${beforeFilter} → ${filtered.length}`);
     }
   }
   
   return filtered;
 }
 
+// ============================================
+// DÉDUPLICATION
+// ============================================
 function normalizeTitle(title) {
   return (title || '')
     .toLowerCase()
@@ -315,14 +229,33 @@ function deduplicateResults(results) {
   });
 }
 
-function calculateScore(item) {
+// ============================================
+// CALCUL DU SCORE
+// ============================================
+function calculateScore(item, keywords = []) {
   let score = 50;
   const title = (item.title || '').toLowerCase();
   
+  // Mots-clés urgents dans le titre
   if (/gấp|nhanh|kẹt tiền|cần tiền|thanh lý|lỗ|ngộp/.test(title)) score += 15;
+  
+  // Mots-clés personnalisés
+  if (keywords.length > 0) {
+    const hasKeyword = keywords.some(kw => title.includes(kw.toLowerCase()));
+    if (hasKeyword) score += 10;
+  }
+  
+  // A une image
   if (item.thumbnail) score += 5;
+  
+  // Annonce récente
   if ((item.postedOn || '').includes('hôm nay') || (item.postedOn || '').includes('phút')) score += 10;
-  if (item.area > 0 && item.price > 0 && item.price / item.area < 50000000) score += 10;
+  
+  // Bon rapport qualité/prix (prix/m² bas)
+  if (item.area > 0 && item.price > 0) {
+    const pricePerM2 = item.price / item.area;
+    if (pricePerM2 < 50000000) score += 10; // < 50 triệu/m²
+  }
   
   return Math.min(100, score);
 }
@@ -348,81 +281,81 @@ exports.handler = async (event) => {
   let body = {};
   try { body = JSON.parse(event.body || '{}'); } catch (e) { body = {}; }
 
-  const { city, district, propertyType, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, sources, sortBy } = body;
+  const { 
+    city, 
+    district, 
+    propertyType, 
+    priceMin, 
+    priceMax, 
+    livingAreaMin, 
+    livingAreaMax, 
+    bedrooms, 
+    sortBy,
+    keywords = []
+  } = body;
 
   console.log('=== NOUVELLE RECHERCHE ===');
-  console.log('Params:', JSON.stringify({ city, propertyType, priceMin, priceMax, sources }));
+  console.log('Params:', JSON.stringify({ city, propertyType, priceMin, priceMax }));
 
   try {
-    const promises = [];
-    
-    // CHOTOT - Rapide (~1s)
-    if (sources?.includes('chotot')) {
-      promises.push(
-        fetchChotot({ city, priceMin, priceMax, sortBy })
-          .then(results => ({ source: 'chotot', results }))
-      );
-    }
-    
-    // BATDONGSAN - Plus lent (~30s) mais données riches
-    if (sources?.includes('batdongsan')) {
-      promises.push(
-        fetchBatdongsan({ city, propertyType, priceMax })
-          .then(results => ({ source: 'batdongsan', results }))
-      );
-    }
-    
-    // Exécuter en parallèle
-    const responses = await Promise.all(promises);
-    
-    let allResults = [];
-    for (const { source, results } of responses) {
-      console.log(`${source}: ${results.length} résultats`);
-      allResults.push(...results);
-    }
+    // Récupérer les annonces de Chotot
+    let allResults = await fetchChotot({ city, priceMin, priceMax, sortBy });
     
     console.log(`TOTAL BRUT: ${allResults.length}`);
     
-    // Filtres (Chotot n'est pas filtré par type côté API)
-    allResults = applyFilters(allResults, { propertyType, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms });
+    // Appliquer les filtres
+    allResults = applyFilters(allResults, { 
+      propertyType, 
+      priceMin, 
+      priceMax, 
+      livingAreaMin, 
+      livingAreaMax, 
+      bedrooms 
+    });
     console.log(`Après filtres: ${allResults.length}`);
     
     // Déduplication
     const unique = deduplicateResults(allResults);
-    console.log(`Après dédup: ${unique.length}`);
+    const duplicatesRemoved = allResults.length - unique.length;
+    console.log(`Après dédup: ${unique.length} (${duplicatesRemoved} doublons)`);
     
-    // Score et tri
-    let sortedResults = unique.map(item => ({ ...item, score: calculateScore(item) }));
+    // Calculer score et trier
+    let sortedResults = unique.map(item => ({ 
+      ...item, 
+      score: calculateScore(item, keywords) 
+    }));
     
-    if (sortBy === 'price_asc') {
+    if (sortBy === 'price_asc' || sortBy === 'priceAsc') {
       sortedResults.sort((a, b) => a.price - b.price);
-    } else if (sortBy === 'price_desc') {
+    } else if (sortBy === 'price_desc' || sortBy === 'priceDesc') {
       sortedResults.sort((a, b) => b.price - a.price);
     } else {
       sortedResults.sort((a, b) => b.score - a.score);
     }
     
-    // Limiter à 100
+    // Limiter à 100 résultats pour l'affichage
     const results = sortedResults.slice(0, 100).map((item, i) => ({
       id: item.id || i,
       title: item.title || 'Sans titre',
       price: item.price || 0,
       pricePerSqm: item.area > 0 ? Math.round(item.price / item.area) : 0,
       city: item.city || city || '',
-      district: item.district || '',
+      district: item.district || district || '',
+      address: item.district ? `${item.district}, ${item.city || city}` : (item.city || city || ''),
       floorArea: item.area || 0,
       bedrooms: item.bedrooms || 0,
       bathrooms: item.bathrooms || 0,
       imageUrl: item.thumbnail || 'https://via.placeholder.com/300x200?text=No+Image',
       images: item.images || [],
       url: item.url || '#',
-      source: item.source || 'unknown',
+      source: item.source || 'chotot.com',
       score: item.score,
       hasUrgentKeyword: /gấp|nhanh|kẹt|thanh lý|lỗ|ngộp/i.test(item.title),
       isNew: /hôm nay|phút|today/i.test(item.postedOn || ''),
       postedOn: item.postedOn || '',
     }));
 
+    // Statistiques
     const prices = results.map(r => r.price).filter(p => p > 0);
     const stats = {
       lowestPrice: prices.length ? Math.min(...prices) : 0,
@@ -431,7 +364,7 @@ exports.handler = async (event) => {
       totalAvailable: unique.length,
     };
 
-    console.log(`FINAL: ${results.length} résultats`);
+    console.log(`FINAL: ${results.length} résultats affichés, ${unique.length} disponibles`);
 
     return {
       statusCode: 200,
@@ -444,7 +377,12 @@ exports.handler = async (event) => {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ success: false, error: error.message, results: [], stats: {} })
+      body: JSON.stringify({ 
+        success: false, 
+        error: error.message, 
+        results: [], 
+        stats: {} 
+      })
     };
   }
 };
