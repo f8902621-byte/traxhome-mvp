@@ -1038,7 +1038,7 @@ comingSoon: 'Bientôt',
                       </div>
 {/* Bouton Google Maps */}
                 {prop.latitude && prop.longitude && (
-                  
+                  <a
                     href={`https://www.google.com/maps?q=${prop.latitude},${prop.longitude}`}
                     target="_blank"
                     rel="noopener noreferrer"
