@@ -62,16 +62,16 @@ export default function Home() {
       bedrooms: 'Phòng ngủ',
       daysListed: 'Đăng trong (ngày)',
       legalStatus: 'Pháp lý',
-legalAll: 'Tất cả',
-legalSoHong: 'Sổ Hồng',
-legalSoDo: 'Sổ Đỏ',
-legalNone: 'Chưa có sổ',
+      legalAll: 'Tất cả',
+      legalSoHong: 'Sổ Hồng',
+      legalSoDo: 'Sổ Đỏ',
+      legalNone: 'Chưa có sổ',
       customKeyword: 'Thêm từ khóa',
-customKeywordPlaceholder: 'Nhập từ khóa khác...',
+      customKeywordPlaceholder: 'Nhập từ khóa khác...',
       sources: 'Nguồn dữ liệu',
-sourcesDesc: 'Chọn các trang web để tìm kiếm',
-premiumSource: 'Premium',
-comingSoon: 'Sắp có',
+      sourcesDesc: 'Chọn các trang web để tìm kiếm',
+      premiumSource: 'Premium',
+      comingSoon: 'Sắp có',
       keywords: 'Từ khóa Khẩn cấp (QUAN TRỌNG)',
       keywordsDesc: 'Những từ này cho thấy người bán gấp = cơ hội đàm phán tốt nhất!',
       search: 'Tìm kiếm',
@@ -113,6 +113,9 @@ comingSoon: 'Sắp có',
       loadSearch: 'Tải',
       deleteSearch: 'Xóa',
       searchSaved: 'Đã lưu tìm kiếm!',
+      hasParking: 'Parking',
+      hasPool: 'Piscine',
+      streetWidth: 'Rue min (m)',
     },
     en: {
       menu: 'Menu',
@@ -128,16 +131,16 @@ comingSoon: 'Sắp có',
       bedrooms: 'Bedrooms',
       daysListed: 'Listed within (days)',
       legalStatus: 'Legal Status',
-legalAll: 'All',
-legalSoHong: 'Pink Book',
-legalSoDo: 'Red Book',
-legalNone: 'No documents',
+      legalAll: 'All',
+      legalSoHong: 'Pink Book',
+      legalSoDo: 'Red Book',
+      legalNone: 'No documents',
       customKeyword: 'Add keyword',
-customKeywordPlaceholder: 'Enter custom keyword...',
+      customKeywordPlaceholder: 'Enter custom keyword...',
       sources: 'Data Sources',
-sourcesDesc: 'Select websites to search',
-premiumSource: 'Premium',
-comingSoon: 'Coming Soon',
+      sourcesDesc: 'Select websites to search',
+      premiumSource: 'Premium',
+      comingSoon: 'Coming Soon',
       keywords: 'Urgent Keywords (IMPORTANT)',
       keywordsDesc: 'These words indicate desperate sellers = best negotiation opportunity!',
       search: 'Search',
@@ -179,6 +182,9 @@ comingSoon: 'Coming Soon',
       loadSearch: 'Load',
       deleteSearch: 'Delete',
       searchSaved: 'Search saved!',
+      hasParking: 'Parking',
+      hasPool: 'Pool',
+      streetWidth: 'Street min (m)',
     },
     fr: {
       menu: 'Menu',
@@ -194,16 +200,16 @@ comingSoon: 'Coming Soon',
       bedrooms: 'Chambres',
       daysListed: 'Publié depuis (jours)',
       legalStatus: 'Statut légal',
-legalAll: 'Tous',
-legalSoHong: 'Carnet Rose',
-legalSoDo: 'Carnet Rouge',
-legalNone: 'Sans document',
+      legalAll: 'Tous',
+      legalSoHong: 'Carnet Rose',
+      legalSoDo: 'Carnet Rouge',
+      legalNone: 'Sans document',
       customKeyword: 'Ajouter mot-clé',
-customKeywordPlaceholder: 'Entrer un mot-clé...',
+      customKeywordPlaceholder: 'Entrer un mot-clé...',
       sources: 'Sources de données',
-sourcesDesc: 'Sélectionner les sites à rechercher',
-premiumSource: 'Premium',
-comingSoon: 'Bientôt',
+      sourcesDesc: 'Sélectionner les sites à rechercher',
+      premiumSource: 'Premium',
+      comingSoon: 'Bientôt',
       keywords: 'Mots-clés Urgents (IMPORTANT)',
       keywordsDesc: 'Ces mots indiquent un vendeur pressé = meilleure opportunité de négociation!',
       search: 'Rechercher',
@@ -245,6 +251,9 @@ comingSoon: 'Bientôt',
       loadSearch: 'Charger',
       deleteSearch: 'Supprimer',
       searchSaved: 'Recherche sauvegardée!',
+      hasParking: 'Parking',
+      hasPool: 'Piscine',
+      streetWidth: 'Rue min (m)',
     }
   }[language];
 
@@ -281,6 +290,7 @@ comingSoon: 'Bientôt',
     { vn: 'Đất nghỉ dưỡng', en: 'Resort Land', fr: 'Terrain Vacances' },
     { vn: 'Bất động sản khác', en: 'Other', fr: 'Autre' }
   ];
+
   const availableSources = [
     { id: 'batdongsan', name: 'Batdongsan.com.vn', premium: true, active: true },
     { id: 'chotot', name: 'Chotot.com', premium: false, active: true },
@@ -289,6 +299,7 @@ comingSoon: 'Bientôt',
     { id: 'muaban', name: 'Muaban.net', premium: false, active: false },
     { id: 'alonhadat', name: 'Alonhadat.com.vn', premium: false, active: false },
   ];
+
   const vietnamCities = [
     { vn: 'Hồ Chí Minh', en: 'Ho Chi Minh City', fr: 'Hô-Chi-Minh-Ville' },
     { vn: 'Hà Nội', en: 'Hanoi', fr: 'Hanoï' },
@@ -540,40 +551,41 @@ comingSoon: 'Bientôt',
       {showSearch && (
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
-        {/* Sources */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  🌐 {t.sources}
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {availableSources.map((source) => (
- <button
-                  key={source.id}
-                  type="button"
-                  onClick={() => {
-                    if (!source.active) return; // Bloquer le clic si inactif
-                    const newSources = searchParams.sources.includes(source.id)
-                      ? searchParams.sources.filter(s => s !== source.id)
-                      : [...searchParams.sources, source.id];
-                    setSearchParams({ ...searchParams, sources: newSources });
-                  }}
-                  className={`px-3 py-1 rounded-full text-sm relative ${
-                    !source.active
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : searchParams.sources.includes(source.id)
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                  disabled={!source.active}
-                >
-                  {source.name}
-                  {!source.active && (
-                    <span className="ml-1 text-xs">(Sắp ra mắt)</span>
-                  )}
-                </button>
-                  ))}
-                </div>
+            {/* Sources */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                🌐 {t.sources}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {availableSources.map((source) => (
+                  <button
+                    key={source.id}
+                    type="button"
+                    onClick={() => {
+                      if (!source.active) return;
+                      const newSources = searchParams.sources.includes(source.id)
+                        ? searchParams.sources.filter(s => s !== source.id)
+                        : [...searchParams.sources, source.id];
+                      setSearchParams({ ...searchParams, sources: newSources });
+                    }}
+                    className={`px-3 py-1 rounded-full text-sm relative ${
+                      !source.active
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        : searchParams.sources.includes(source.id)
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                    disabled={!source.active}
+                  >
+                    {source.name}
+                    {!source.active && (
+                      <span className="ml-1 text-xs">(Sắp ra mắt)</span>
+                    )}
+                  </button>
+                ))}
               </div>
+            </div>
+
             <div className="flex gap-4">
               <button
                 onClick={() => setMode('buy')}
@@ -593,6 +605,7 @@ comingSoon: 'Bientôt',
               </button>
             </div>
 
+            {/* Section Localisation & Type */}
             <div className="border-b pb-4">
               <h3 className="text-sm font-semibold text-gray-500 mb-3">📍 {language === 'vn' ? 'Vị trí & Loại BDS' : language === 'fr' ? 'Localisation & Type' : 'Location & Type'}</h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -647,6 +660,7 @@ comingSoon: 'Bientôt',
               </div>
             </div>
 
+            {/* Section Prix & Caractéristiques */}
             <div className="border-b pb-4">
               <h3 className="text-sm font-semibold text-gray-500 mb-3">💰 {language === 'vn' ? 'Giá & Tính năng Cơ bản' : language === 'fr' ? 'Prix & Caractéristiques' : 'Price & Features'}</h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -708,69 +722,43 @@ comingSoon: 'Bientôt',
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">{t.bedrooms}</label>
-                    <input
-                      type="number"
-                      value={searchParams.bedrooms}
-                      onChange={(e) => setSearchParams({...searchParams, bedrooms: e.target.value})}
-                      className="w-full px-4 py-2 border rounded-lg"
-                      placeholder="2"
-                    />
-                  </div>
-                        <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">🚿 Phòng tắm</label>
-                <input
-                  type="number"
-                  value={searchParams.bathrooms}
-                  onChange={(e) => setSearchParams({...searchParams, bathrooms: e.target.value})}
-                  className="w-full px-4 py-2 border rounded-lg"
-                  placeholder="1"
-                />
-              </div>
-             {/* Filtres équipements */}
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={searchParams.hasParking}
-                  onChange={(e) => setSearchParams({...searchParams, hasParking: e.target.checked})}
-                  className="w-5 h-5 text-blue-600 rounded"
-                />
-                <span className="text-sm font-medium text-gray-700">🚗 Parking</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={searchParams.hasPool}
-                  onChange={(e) => setSearchParams({...searchParams, hasPool: e.target.checked})}
-                  className="w-5 h-5 text-blue-600 rounded"
-                />
-                <span className="text-sm font-medium text-gray-700">🏊 Piscine</span>
-              </label>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">🛣️ Rue min (m)</label>
-                <input
-                  type="number"
-                  value={searchParams.streetWidthMin}
-                  onChange={(e) => setSearchParams({...searchParams, streetWidthMin: e.target.value})}
-                  placeholder="4"
-                  step="0.5"
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-                    <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">{t.daysListed}</label>
-                    <input
-                      type="number"
-                      value={searchParams.daysListed}
-                      onChange={(e) => setSearchParams({...searchParams, daysListed: e.target.value})}
-                      className="w-full px-4 py-2 border rounded-lg"
-                      placeholder="30"
-                    />
-      
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">{t.bedrooms}</label>
+                  <input
+                    type="number"
+                    value={searchParams.bedrooms}
+                    onChange={(e) => setSearchParams({...searchParams, bedrooms: e.target.value})}
+                    className="w-full px-4 py-2 border rounded-lg"
+                    placeholder="2"
+                  />
                 </div>
-                        <div>
+              </div>
+
+              {/* Ligne 2: Bathrooms, Jours, Legal Status + Filtres équipements */}
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">🚿 {t.bathrooms}</label>
+                  <input
+                    type="number"
+                    value={searchParams.bathrooms}
+                    onChange={(e) => setSearchParams({...searchParams, bathrooms: e.target.value})}
+                    className="w-full px-4 py-2 border rounded-lg"
+                    placeholder="1"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">{t.daysListed}</label>
+                  <input
+                    type="number"
+                    value={searchParams.daysListed}
+                    onChange={(e) => setSearchParams({...searchParams, daysListed: e.target.value})}
+                    className="w-full px-4 py-2 border rounded-lg"
+                    placeholder="30"
+                  />
+                </div>
+
+                <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">{t.legalStatus}</label>
                   <select
                     value={searchParams.legalStatus}
@@ -783,15 +771,53 @@ comingSoon: 'Bientôt',
                     <option value="none">{t.legalNone}</option>
                   </select>
                 </div>
+
+                {/* Filtres équipements sur la même ligne */}
+                <div className="flex items-end">
+                  <label className="flex items-center gap-2 cursor-pointer pb-2">
+                    <input
+                      type="checkbox"
+                      checked={searchParams.hasParking}
+                      onChange={(e) => setSearchParams({...searchParams, hasParking: e.target.checked})}
+                      className="w-5 h-5 text-blue-600 rounded"
+                    />
+                    <span className="text-sm font-medium text-gray-700">🚗 {t.hasParking}</span>
+                  </label>
+                </div>
+
+                <div className="flex items-end">
+                  <label className="flex items-center gap-2 cursor-pointer pb-2">
+                    <input
+                      type="checkbox"
+                      checked={searchParams.hasPool}
+                      onChange={(e) => setSearchParams({...searchParams, hasPool: e.target.checked})}
+                      className="w-5 h-5 text-blue-600 rounded"
+                    />
+                    <span className="text-sm font-medium text-gray-700">🏊 {t.hasPool}</span>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">🛣️ {t.streetWidth}</label>
+                  <input
+                    type="number"
+                    value={searchParams.streetWidthMin}
+                    onChange={(e) => setSearchParams({...searchParams, streetWidthMin: e.target.value})}
+                    placeholder="4"
+                    step="0.5"
+                    className="w-full px-3 py-2 border rounded-lg"
+                  />
+                </div>
               </div>
             </div>
 
+            {/* Section Mots-clés urgents */}
             <div>
               <label className="block text-sm font-bold text-red-600 mb-1">
                 🔥 {t.keywords}
               </label>
               <p className="text-xs text-gray-500 mb-3">{t.keywordsDesc}</p>
-                <div className="mb-3">
+              <div className="mb-3">
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -932,21 +958,21 @@ comingSoon: 'Bientôt',
                           {t.urgentSale}
                         </div>
                       )}
-{prop.legalStatus && (
-                  <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-bold">
-                    📋 {prop.legalStatus}
-                  </div>
-                )}
-{/* Badge Source */}
-<div className={`absolute bottom-2 left-2 px-2 py-1 rounded text-xs font-bold ${
-  prop.source === 'batdongsan.com.vn' 
-    ? 'bg-orange-500 text-white' 
-    : prop.source === 'chotot.com'
-      ? 'bg-green-600 text-white'
-      : 'bg-gray-500 text-white'
-}`}>
-  {prop.source === 'batdongsan.com.vn' ? 'BĐS' : prop.source === 'chotot.com' ? 'Chợ Tốt' : prop.source}
-</div>
+                      {prop.legalStatus && (
+                        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-bold">
+                          📋 {prop.legalStatus}
+                        </div>
+                      )}
+                      {/* Badge Source */}
+                      <div className={`absolute bottom-2 left-2 px-2 py-1 rounded text-xs font-bold ${
+                        prop.source === 'batdongsan.com.vn' 
+                          ? 'bg-orange-500 text-white' 
+                          : prop.source === 'chotot.com'
+                            ? 'bg-green-600 text-white'
+                            : 'bg-gray-500 text-white'
+                      }`}>
+                        {prop.source === 'batdongsan.com.vn' ? 'BĐS' : prop.source === 'chotot.com' ? 'Chợ Tốt' : prop.source}
+                      </div>
                       {expandedPhoto === prop.id && (
                         <div className="absolute inset-0 bg-black bg-opacity-90 flex items-center justify-center z-10 p-4">
                           <img src={prop.imageUrl} alt={prop.title} className="max-w-full max-h-full object-contain" />
@@ -960,25 +986,26 @@ comingSoon: 'Bientôt',
                         <p className="text-2xl font-bold text-blue-600">{formatPrice(prop.price)}</p>
                         <p className="text-sm text-gray-500">{formatPrice(prop.pricePerSqm)}/m²</p>
                       </div>
-                        {/* Mots-clés urgents */}
-                {prop.urgentKeywords && prop.urgentKeywords.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {prop.urgentKeywords.map((keyword, idx) => (
-                      <span key={idx} className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-medium">
-                        🔥 {keyword}
-                      </span>
-                    ))}
-                  </div>
-                )}
 
-                {/* Description */}
-                {prop.description && (
-                  <div className="bg-gray-50 rounded p-2 mb-2 max-h-24 overflow-y-auto">
-                    <p className="text-xs text-gray-600 line-clamp-4">
-                      {prop.description.substring(0, 300)}...
-                    </p>
-                  </div>
-                )}
+                      {/* Mots-clés urgents */}
+                      {prop.urgentKeywords && prop.urgentKeywords.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {prop.urgentKeywords.map((keyword, idx) => (
+                            <span key={idx} className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-medium">
+                              🔥 {keyword}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Description */}
+                      {prop.description && (
+                        <div className="bg-gray-50 rounded p-2 mb-2 max-h-24 overflow-y-auto">
+                          <p className="text-xs text-gray-600 line-clamp-4">
+                            {prop.description.substring(0, 300)}...
+                          </p>
+                        </div>
+                      )}
 
                       <div className="mb-3">
                         <div className="flex justify-between mb-1">
@@ -997,21 +1024,22 @@ comingSoon: 'Bientôt',
                         <div>📐 {prop.floorArea}m²</div>
                         <div>🛏️ {prop.bedrooms} ch.</div>
                       </div>
-                            {/* Badges équipements */}
-                <div className="flex flex-wrap gap-1 mb-2">
-                  {prop.hasParking && (
-                    <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">🚗 Parking</span>
-                  )}
-                  {prop.hasPool && (
-                    <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">🏊 Piscine</span>
-                  )}
-                  {prop.openFaces >= 2 && (
-                    <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs">🏠 {prop.openFaces} mặt tiền</span>
-                  )}
-                  {prop.bathrooms && (
-                    <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">🚿 {prop.bathrooms} WC</span>
-                  )}
-                </div>
+
+                      {/* Badges équipements */}
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {prop.hasParking && (
+                          <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">🚗 Parking</span>
+                        )}
+                        {prop.hasPool && (
+                          <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">🏊 Piscine</span>
+                        )}
+                        {prop.openFaces >= 2 && (
+                          <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs">🏠 {prop.openFaces} mặt tiền</span>
+                        )}
+                        {prop.bathrooms && (
+                          <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">🚿 {prop.bathrooms} WC</span>
+                        )}
+                      </div>
 
                       <div 
                         className="flex items-start gap-2 text-sm text-gray-700 mb-3 cursor-pointer hover:text-blue-600"
@@ -1020,17 +1048,18 @@ comingSoon: 'Bientôt',
                         <MapPin className="w-4 h-4 mt-0.5" />
                         <span className="line-clamp-2">{prop.address}, {prop.city}</span>
                       </div>
-{/* Bouton Google Maps */}
-                {prop.latitude && prop.longitude && (
-                  <a
-                    href={`https://www.google.com/maps?q=${prop.latitude},${prop.longitude}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-center block mb-2"
-                  >
-                    🗺️ Google Maps
-                  </a>
-                )}
+
+                      {/* Bouton Google Maps */}
+                      {prop.latitude && prop.longitude && (
+                        <a
+                          href={`https://www.google.com/maps?q=${prop.latitude},${prop.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-center block mb-2"
+                        >
+                          🗺️ Google Maps
+                        </a>
+                      )}
                       <button 
                         onClick={() => setSelectedProperty(prop)}
                         className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
