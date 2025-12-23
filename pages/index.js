@@ -759,6 +759,7 @@ comingSoon: 'Bientôt',
                   className="w-full px-3 py-2 border rounded-lg"
                 />
               </div>
+                    <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">{t.daysListed}</label>
                     <input
                       type="number"
@@ -767,7 +768,7 @@ comingSoon: 'Bientôt',
                       className="w-full px-4 py-2 border rounded-lg"
                       placeholder="30"
                     />
-                  </div>
+      
                 </div>
                         <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">{t.legalStatus}</label>
