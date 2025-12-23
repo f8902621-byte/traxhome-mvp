@@ -15,6 +15,8 @@ export default function Home() {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [savedSearches, setSavedSearches] = useState([]);
   const [showSavedSearches, setShowSavedSearches] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [mapPopup, setMapPopup] = useState(null);
   const [searchParams, setSearchParams] = useState({
     city: '',
     district: '',
@@ -24,10 +26,14 @@ export default function Home() {
     livingAreaMin: '',
     livingAreaMax: '',
     bedrooms: '',
+    bathrooms: '',
+    hasParking: false,
+    hasPool: false,
+    streetWidthMin: '',
     daysListed: '',
     legalStatus: '',
     customKeyword: '',
-    sources: ['batdongsan'],
+    sources: ['chotot'],
     keywords: [],
     numSites: 5
   });
@@ -713,7 +719,63 @@ comingSoon: 'Bientôt',
                       placeholder="2"
                     />
                   </div>
+                        <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">🚿 Phòng tắm</label>
+                <input
+                  type="number"
+                  value={searchParams.bathrooms}
+                  onChange={(e) => setSearchParams({...searchParams, bathrooms: e.target.value})}
+                  className="w-full px-4 py-2 border rounded-lg"
+                  placeholder="1"
+                />
+              </div>
                   <div>
+                    {/* Filtres avancés */}
+            <div className="col-span-full">
+              <button
+                type="button"
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
+                {showAdvancedFilters ? '▼ Ẩn bộ lọc nâng cao' : '▶ Bộ lọc nâng cao'}
+              </button>
+            </div>
+
+            {showAdvancedFilters && (
+              <div className="col-span-full grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={searchParams.hasParking}
+                    onChange={(e) => setSearchParams({...searchParams, hasParking: e.target.checked})}
+                    className="w-5 h-5 text-blue-600 rounded"
+                  />
+                  <span className="text-sm font-medium text-gray-700">🚗 Chỗ đậu xe</span>
+                </label>
+                
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={searchParams.hasPool}
+                    onChange={(e) => setSearchParams({...searchParams, hasPool: e.target.checked})}
+                    className="w-5 h-5 text-blue-600 rounded"
+                  />
+                  <span className="text-sm font-medium text-gray-700">🏊 Hồ bơi</span>
+                </label>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">🛣️ Độ rộng đường (m)</label>
+                  <input
+                    type="number"
+                    value={searchParams.streetWidthMin}
+                    onChange={(e) => setSearchParams({...searchParams, streetWidthMin: e.target.value})}
+                    placeholder="4"
+                    step="0.5"
+                    className="w-full px-3 py-2 border rounded-lg"
+                  />
+                </div>
+              </div>
+            )}
                     <label className="block text-sm font-bold text-gray-700 mb-2">{t.daysListed}</label>
                     <input
                       type="number"
@@ -886,6 +948,11 @@ comingSoon: 'Bientôt',
                           {t.urgentSale}
                         </div>
                       )}
+{prop.legalStatus && (
+                  <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-bold">
+                    📋 {prop.legalStatus}
+                  </div>
+                )}
 {/* Badge Source */}
 <div className={`absolute bottom-2 left-2 px-2 py-1 rounded text-xs font-bold ${
   prop.source === 'batdongsan.com.vn' 
@@ -909,6 +976,25 @@ comingSoon: 'Bientôt',
                         <p className="text-2xl font-bold text-blue-600">{formatPrice(prop.price)}</p>
                         <p className="text-sm text-gray-500">{formatPrice(prop.pricePerSqm)}/m²</p>
                       </div>
+                        {/* Mots-clés urgents */}
+                {prop.urgentKeywords && prop.urgentKeywords.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {prop.urgentKeywords.map((keyword, idx) => (
+                      <span key={idx} className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-medium">
+                        🔥 {keyword}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Description */}
+                {prop.description && (
+                  <div className="bg-gray-50 rounded p-2 mb-2 max-h-24 overflow-y-auto">
+                    <p className="text-xs text-gray-600 line-clamp-4">
+                      {prop.description.substring(0, 300)}...
+                    </p>
+                  </div>
+                )}
 
                       <div className="mb-3">
                         <div className="flex justify-between mb-1">
@@ -927,6 +1013,21 @@ comingSoon: 'Bientôt',
                         <div>📐 {prop.floorArea}m²</div>
                         <div>🛏️ {prop.bedrooms} ch.</div>
                       </div>
+                            {/* Badges équipements */}
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {prop.hasParking && (
+                    <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">🚗 Parking</span>
+                  )}
+                  {prop.hasPool && (
+                    <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">🏊 Piscine</span>
+                  )}
+                  {prop.openFaces >= 2 && (
+                    <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs">🏠 {prop.openFaces} mặt tiền</span>
+                  )}
+                  {prop.bathrooms && (
+                    <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">🚿 {prop.bathrooms} WC</span>
+                  )}
+                </div>
 
                       <div 
                         className="flex items-start gap-2 text-sm text-gray-700 mb-3 cursor-pointer hover:text-blue-600"
@@ -935,7 +1036,17 @@ comingSoon: 'Bientôt',
                         <MapPin className="w-4 h-4 mt-0.5" />
                         <span className="line-clamp-2">{prop.address}, {prop.city}</span>
                       </div>
-
+{/* Bouton Google Maps */}
+                {prop.latitude && prop.longitude && (
+                  
+                    href={`https://www.google.com/maps?q=${prop.latitude},${prop.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-center block mb-2"
+                  >
+                    🗺️ Google Maps
+                  </a>
+                )}
                       <button 
                         onClick={() => setSelectedProperty(prop)}
                         className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
