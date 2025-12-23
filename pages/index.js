@@ -218,13 +218,40 @@ export default function Landing() {
     }
   }[language];
 
-  const handleBetaSignup = (e) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+
+  const handleBetaSignup = async (e) => {
     e.preventDefault();
-    if (email) {
-      // TODO: Envoyer à un backend/Airtable/Google Sheets
-      console.log('Beta signup:', email);
+    if (!email) return;
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const response = await fetch('/.netlify/functions/beta-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email, 
+          language,
+          source: 'landing' 
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur lors de l\'inscription');
+      }
+
       setSubmitted(true);
       setEmail('');
+    } catch (error) {
+      console.error('Beta signup error:', error);
+      setSubmitError(error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -475,22 +502,29 @@ export default function Landing() {
               <p className="text-white font-medium">{t.ctaSuccess}</p>
             </div>
           ) : (
-            <form onSubmit={handleBetaSignup} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-6">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t.ctaPlaceholder}
-                className="flex-1 px-5 py-4 rounded-xl border-0 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-white/50"
-                required
-              />
-              <button
-                type="submit"
-                className="px-8 py-4 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 transition shadow-lg"
-              >
-                {t.ctaButton}
-              </button>
-            </form>
+            <>
+              <form onSubmit={handleBetaSignup} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-6">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t.ctaPlaceholder}
+                  className="flex-1 px-5 py-4 rounded-xl border-0 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-white/50"
+                  required
+                  disabled={isSubmitting}
+                />
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-8 py-4 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? '...' : t.ctaButton}
+                </button>
+              </form>
+              {submitError && (
+                <p className="text-red-200 text-sm mb-4">{submitError}</p>
+              )}
+            </>
           )}
           
           <div className="flex items-center justify-center gap-2 text-blue-200">
