@@ -730,53 +730,36 @@ comingSoon: 'Bientôt',
                 />
               </div>
                   <div>
-                    {/* Filtres avancés */}
-            <div className="col-span-full">
-              <button
-                type="button"
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-              >
-                {showAdvancedFilters ? '▼ Ẩn bộ lọc nâng cao' : '▶ Bộ lọc nâng cao'}
-              </button>
-            </div>
-
-           {showAdvancedFilters && (
-                <div className="col-span-full bg-gray-50 rounded-lg p-4 mt-2">
-                  <div className="flex flex-wrap items-center gap-6">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={searchParams.hasParking}
-                        onChange={(e) => setSearchParams({...searchParams, hasParking: e.target.checked})}
-                        className="w-5 h-5 text-blue-600 rounded"
-                      />
-                      <span className="text-sm font-medium text-gray-700">🚗 Chỗ đậu xe</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={searchParams.hasPool}
-                        onChange={(e) => setSearchParams({...searchParams, hasPool: e.target.checked})}
-                        className="w-5 h-5 text-blue-600 rounded"
-                      />
-                      <span className="text-sm font-medium text-gray-700">🏊 Hồ bơi</span>
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-700">🛣️ Đường rộng min:</span>
-                      <input
-                        type="number"
-                        value={searchParams.streetWidthMin}
-                        onChange={(e) => setSearchParams({...searchParams, streetWidthMin: e.target.value})}
-                        placeholder="4"
-                        step="0.5"
-                        className="w-20 px-2 py-1 border rounded-lg"
-                      />
-                      <span className="text-sm text-gray-500">m</span>
-                    </div>
-                  </div>
-                </div>
-              )}
+            {/* Filtres équipements */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={searchParams.hasParking}
+                  onChange={(e) => setSearchParams({...searchParams, hasParking: e.target.checked})}
+                  className="w-5 h-5 text-blue-600 rounded"
+                />
+                <span className="text-sm font-medium text-gray-700">🚗 Parking</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={searchParams.hasPool}
+                  onChange={(e) => setSearchParams({...searchParams, hasPool: e.target.checked})}
+                  className="w-5 h-5 text-blue-600 rounded"
+                />
+                <span className="text-sm font-medium text-gray-700">🏊 Piscine</span>
+              </label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">🛣️ Rue min (m)</label>
+                <input
+                  type="number"
+                  value={searchParams.streetWidthMin}
+                  onChange={(e) => setSearchParams({...searchParams, streetWidthMin: e.target.value})}
+                  placeholder="4"
+                  step="0.5"
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">{t.daysListed}</label>
                     <input
                       type="number"
