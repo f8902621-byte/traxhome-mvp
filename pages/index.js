@@ -741,41 +741,42 @@ comingSoon: 'Bientôt',
               </button>
             </div>
 
-            {showAdvancedFilters && (
-              <div className="col-span-full grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={searchParams.hasParking}
-                    onChange={(e) => setSearchParams({...searchParams, hasParking: e.target.checked})}
-                    className="w-5 h-5 text-blue-600 rounded"
-                  />
-                  <span className="text-sm font-medium text-gray-700">🚗 Chỗ đậu xe</span>
-                </label>
-                
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={searchParams.hasPool}
-                    onChange={(e) => setSearchParams({...searchParams, hasPool: e.target.checked})}
-                    className="w-5 h-5 text-blue-600 rounded"
-                  />
-                  <span className="text-sm font-medium text-gray-700">🏊 Hồ bơi</span>
-                </label>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">🛣️ Độ rộng đường (m)</label>
-                  <input
-                    type="number"
-                    value={searchParams.streetWidthMin}
-                    onChange={(e) => setSearchParams({...searchParams, streetWidthMin: e.target.value})}
-                    placeholder="4"
-                    step="0.5"
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
+           {showAdvancedFilters && (
+                <div className="col-span-full bg-gray-50 rounded-lg p-4 mt-2">
+                  <div className="flex flex-wrap items-center gap-6">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={searchParams.hasParking}
+                        onChange={(e) => setSearchParams({...searchParams, hasParking: e.target.checked})}
+                        className="w-5 h-5 text-blue-600 rounded"
+                      />
+                      <span className="text-sm font-medium text-gray-700">🚗 Chỗ đậu xe</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={searchParams.hasPool}
+                        onChange={(e) => setSearchParams({...searchParams, hasPool: e.target.checked})}
+                        className="w-5 h-5 text-blue-600 rounded"
+                      />
+                      <span className="text-sm font-medium text-gray-700">🏊 Hồ bơi</span>
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700">🛣️ Đường rộng min:</span>
+                      <input
+                        type="number"
+                        value={searchParams.streetWidthMin}
+                        onChange={(e) => setSearchParams({...searchParams, streetWidthMin: e.target.value})}
+                        placeholder="4"
+                        step="0.5"
+                        className="w-20 px-2 py-1 border rounded-lg"
+                      />
+                      <span className="text-sm text-gray-500">m</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
                     <label className="block text-sm font-bold text-gray-700 mb-2">{t.daysListed}</label>
                     <input
                       type="number"
