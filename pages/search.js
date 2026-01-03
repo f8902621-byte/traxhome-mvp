@@ -511,15 +511,18 @@ export default function SearchPage() {
                   <div key={prop.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
                     <div className="relative h-48 bg-slate-200">
                       <img src={prop.imageUrl} alt={prop.title} className="w-full h-full object-cover" />
-                      {prop.isNew && <div className="absolute top-2 left-2 bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-xs font-bold">{t.newListing}</div>}
-                      {prop.hasUrgentKeyword && <div className="absolute top-2 right-2 bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold">{t.urgentSale}</div>}
+                      {prop.isNew && <div className="absolute top-2 left-2 bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-xs font-bold animate-pulse">{t.newListing}</div>}
+                      {prop.hasUrgentKeyword && <div className="absolute top-2 right-2 bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold animate-pulse">🔥 {t.urgentSale}</div>}
                       {prop.legalStatus && <div className="absolute bottom-2 left-2 bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">📋 {prop.legalStatus}</div>}
+                      <div className="absolute bottom-2 right-2 bg-slate-800 text-white px-2 py-1 rounded text-xs font-medium opacity-80">
+                        {prop.source}
+                      </div>
                     </div>
                     <div className="p-4">
-                      <h3 className="font-bold text-lg mb-2 truncate">{prop.title}</h3>
+                      <h3 className="font-bold text-lg mb-2 line-clamp-2">{prop.title}</h3>
                       <div className="flex items-baseline gap-2 mb-2">
                         <p className="text-2xl font-bold text-sky-600">{formatPrice(prop.price)}</p>
-                        {prop.pricePerSqm && <p className="text-sm text-gray-500">{formatPrice(prop.pricePerSqm)}/m²</p>}
+                        {prop.pricePerSqm > 0 && <p className="text-sm text-gray-500">{formatPrice(prop.pricePerSqm)}/m²</p>}
                       </div>
                       <div className="mb-3">
                         <div className="flex justify-between mb-1">
@@ -531,17 +534,18 @@ export default function SearchPage() {
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 mb-3">
-                        <div>📐 {prop.floorArea}m²</div>
-                        <div>🛏️ {prop.bedrooms} ch.</div>
+                        <div>📐 {prop.floorArea || '?'}m²</div>
+                        <div>🛏️ {prop.bedrooms || '?'} ch.</div>
                       </div>
-                      <div className="flex items-start gap-2 text-sm text-gray-700 mb-3 cursor-pointer hover:text-sky-600" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(prop.address)}`, '_blank')}>
-                        <MapPin className="w-4 h-4 mt-0.5 text-sky-500" />
-                        <span className="line-clamp-2">{prop.address}</span>
+                      <div 
+                        className="flex items-start gap-2 text-sm text-gray-700 mb-3 cursor-pointer hover:text-sky-600 bg-slate-50 p-2 rounded-lg" 
+                        onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(prop.address || prop.district + ' ' + prop.city)}`, '_blank')}
+                      >
+                        <MapPin className="w-4 h-4 mt-0.5 text-sky-500 flex-shrink-0" />
+                        <span className="line-clamp-2">{prop.address || `${prop.district}${prop.district ? ', ' : ''}${prop.city}`}</span>
                       </div>
-                      {prop.latitude && prop.longitude && (
-                        <a href={`https://www.google.com/maps?q=${prop.latitude},${prop.longitude}`} target="_blank" rel="noopener noreferrer" className="w-full px-4 py-2 bg-teal-100 text-teal-700 rounded-lg text-center block mb-2 font-medium">
-                          🗺️ Google Maps
-                        </a>
+                      {prop.postedOn && (
+                        <div className="text-xs text-gray-500 mb-2">📅 {prop.postedOn}</div>
                       )}
                       <button onClick={() => setSelectedProperty(prop)} className="w-full px-4 py-2 bg-orange-400 text-white rounded-lg hover:bg-orange-500 font-medium">
                         {t.viewDetails}
