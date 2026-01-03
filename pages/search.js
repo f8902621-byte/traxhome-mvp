@@ -79,6 +79,23 @@ export default function SearchPage() {
       hasParking: 'Parking', hasPool: 'Hồ bơi', streetWidth: 'Đường rộng (m)',
       noResults: 'Không tìm thấy kết quả',
       comingSoon: 'Sắp ra mắt',
+      negotiationScore: 'Điểm thương lượng',
+      negotiationExcellent: 'Cơ hội tuyệt vời',
+      negotiationGood: 'Cơ hội tốt',
+      negotiationModerate: 'Cơ hội trung bình',
+      negotiationLow: 'Ít cơ hội',
+      priceAnalysis: 'Phân tích giá',
+      vsAverage: 'so với TB khu vực',
+      belowAverage: 'dưới TB',
+      aboveAverage: 'trên TB',
+      daysOnline: 'ngày đăng',
+      urgentKeywordsFound: 'Từ khóa gấp',
+      whyThisScore: 'Tại sao điểm này?',
+      priceLower: 'Giá thấp hơn TB',
+      listingOld: 'Đăng lâu',
+      fewPhotos: 'Ít hình ảnh',
+      roundPrice: 'Giá tròn',
+      viewOnMap: 'Xem trên bản đồ',
     },
     en: {
       menu: 'Menu', searchParams: 'Search Parameters', backToHome: 'Home',
@@ -106,6 +123,23 @@ export default function SearchPage() {
       hasParking: 'Parking', hasPool: 'Pool', streetWidth: 'Street min (m)',
       noResults: 'No results found',
       comingSoon: 'Coming soon',
+      negotiationScore: 'Negotiation Score',
+      negotiationExcellent: 'Excellent opportunity',
+      negotiationGood: 'Good opportunity',
+      negotiationModerate: 'Moderate opportunity',
+      negotiationLow: 'Low opportunity',
+      priceAnalysis: 'Price Analysis',
+      vsAverage: 'vs area average',
+      belowAverage: 'below avg',
+      aboveAverage: 'above avg',
+      daysOnline: 'days listed',
+      urgentKeywordsFound: 'Urgent keywords',
+      whyThisScore: 'Why this score?',
+      priceLower: 'Price below average',
+      listingOld: 'Listed for long',
+      fewPhotos: 'Few photos',
+      roundPrice: 'Round price',
+      viewOnMap: 'View on map',
     },
     fr: {
       menu: 'Menu', searchParams: 'Paramètres', backToHome: 'Accueil',
@@ -133,6 +167,23 @@ export default function SearchPage() {
       hasParking: 'Parking', hasPool: 'Piscine', streetWidth: 'Rue min (m)',
       noResults: 'Aucun résultat trouvé',
       comingSoon: 'Bientôt',
+      negotiationScore: 'Score de négociation',
+      negotiationExcellent: 'Excellente opportunité',
+      negotiationGood: 'Bonne opportunité',
+      negotiationModerate: 'Opportunité moyenne',
+      negotiationLow: 'Peu d\'opportunité',
+      priceAnalysis: 'Analyse du prix',
+      vsAverage: 'vs moyenne zone',
+      belowAverage: 'sous moy.',
+      aboveAverage: 'au-dessus moy.',
+      daysOnline: 'jours en ligne',
+      urgentKeywordsFound: 'Mots-clés urgents',
+      whyThisScore: 'Pourquoi ce score?',
+      priceLower: 'Prix sous la moyenne',
+      listingOld: 'En ligne depuis longtemps',
+      fewPhotos: 'Peu de photos',
+      roundPrice: 'Prix rond',
+      viewOnMap: 'Voir sur carte',
     }
   }[language];
 
@@ -574,23 +625,158 @@ export default function SearchPage() {
         </div>
       )}
 
-      {/* Property Modal */}
+      {/* Property Analysis Modal */}
       {selectedProperty && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
-              <h2 className="text-xl font-bold">{t.propertyDetails}</h2>
-              <button onClick={() => setSelectedProperty(null)} className="p-2 hover:bg-slate-100 rounded-full">✕</button>
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10">
+              <h2 className="text-xl font-bold">📊 {t.propertyDetails}</h2>
+              <button onClick={() => setSelectedProperty(null)} className="p-2 hover:bg-slate-100 rounded-full text-xl">✕</button>
             </div>
-            <div className="relative h-64 bg-slate-200">
+            
+            {/* Image */}
+            <div className="relative h-48 md:h-64 bg-slate-200">
               <img src={selectedProperty.imageUrl} alt={selectedProperty.title} className="w-full h-full object-cover" />
+              {selectedProperty.hasUrgentKeyword && (
+                <div className="absolute top-3 right-3 bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold animate-pulse">
+                  🔥 {t.urgentSale}
+                </div>
+              )}
+              <div className="absolute bottom-3 left-3 bg-black bg-opacity-70 text-white px-3 py-1 rounded text-sm">
+                {selectedProperty.source}
+              </div>
             </div>
-            <div className="p-6 space-y-4">
-              <h3 className="text-2xl font-bold">{selectedProperty.title}</h3>
-              <p className="text-3xl font-bold text-sky-600">{formatPrice(selectedProperty.price)}</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            
+            <div className="p-6 space-y-6">
+              {/* Title & Price */}
+              <div>
+                <h3 className="text-xl font-bold mb-2">{selectedProperty.title}</h3>
+                <div className="flex items-baseline gap-3">
+                  <p className="text-3xl font-bold text-sky-600">{formatPrice(selectedProperty.price)}</p>
+                  {selectedProperty.pricePerSqm > 0 && (
+                    <p className="text-lg text-gray-500">{formatPrice(selectedProperty.pricePerSqm)}/m²</p>
+                  )}
+                </div>
+              </div>
+              
+              {/* NEGOTIATION SCORE - La star du show */}
+              <div className={`p-5 rounded-xl border-2 ${
+                selectedProperty.negotiationLevel === 'excellent' ? 'bg-green-50 border-green-300' :
+                selectedProperty.negotiationLevel === 'good' ? 'bg-sky-50 border-sky-300' :
+                selectedProperty.negotiationLevel === 'moderate' ? 'bg-yellow-50 border-yellow-300' :
+                'bg-slate-50 border-slate-300'
+              }`}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`text-4xl font-bold ${
+                      selectedProperty.negotiationLevel === 'excellent' ? 'text-green-600' :
+                      selectedProperty.negotiationLevel === 'good' ? 'text-sky-600' :
+                      selectedProperty.negotiationLevel === 'moderate' ? 'text-yellow-600' :
+                      'text-slate-600'
+                    }`}>
+                      {selectedProperty.score}
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-800">{t.negotiationScore}</p>
+                      <p className={`text-sm font-medium ${
+                        selectedProperty.negotiationLevel === 'excellent' ? 'text-green-600' :
+                        selectedProperty.negotiationLevel === 'good' ? 'text-sky-600' :
+                        selectedProperty.negotiationLevel === 'moderate' ? 'text-yellow-600' :
+                        'text-slate-600'
+                      }`}>
+                        {selectedProperty.negotiationLevel === 'excellent' ? t.negotiationExcellent :
+                         selectedProperty.negotiationLevel === 'good' ? t.negotiationGood :
+                         selectedProperty.negotiationLevel === 'moderate' ? t.negotiationModerate :
+                         t.negotiationLow}
+                      </p>
+                    </div>
+                  </div>
+                  <div className={`text-5xl ${
+                    selectedProperty.negotiationLevel === 'excellent' ? '' :
+                    selectedProperty.negotiationLevel === 'good' ? '' :
+                    selectedProperty.negotiationLevel === 'moderate' ? '' : ''
+                  }`}>
+                    {selectedProperty.negotiationLevel === 'excellent' ? '🎯' :
+                     selectedProperty.negotiationLevel === 'good' ? '👍' :
+                     selectedProperty.negotiationLevel === 'moderate' ? '🤔' : '😐'}
+                  </div>
+                </div>
+                
+                {/* Score bar */}
+                <div className="w-full bg-slate-200 rounded-full h-3 mb-4">
+                  <div 
+                    className={`h-3 rounded-full transition-all ${
+                      selectedProperty.negotiationLevel === 'excellent' ? 'bg-green-500' :
+                      selectedProperty.negotiationLevel === 'good' ? 'bg-sky-500' :
+                      selectedProperty.negotiationLevel === 'moderate' ? 'bg-yellow-500' :
+                      'bg-slate-400'
+                    }`} 
+                    style={{ width: `${selectedProperty.score}%` }} 
+                  />
+                </div>
+                
+                {/* Détails du score */}
+                <div className="space-y-2 text-sm">
+                  <p className="font-medium text-gray-700 mb-2">{t.whyThisScore}</p>
+                  
+                  {/* Mots-clés urgents */}
+                  {selectedProperty.urgentKeywords && selectedProperty.urgentKeywords.length > 0 && (
+                    <div className="flex items-center gap-2 text-orange-700 bg-orange-100 px-3 py-2 rounded-lg">
+                      <span>🔥</span>
+                      <span className="font-medium">{t.urgentKeywordsFound}:</span>
+                      <span>{selectedProperty.urgentKeywords.join(', ')}</span>
+                      <span className="ml-auto font-bold">+25</span>
+                    </div>
+                  )}
+                  
+                  {/* Prix vs moyenne */}
+                  {selectedProperty.negotiationDetails?.priceAnalysis && (
+                    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                      selectedProperty.negotiationDetails.priceAnalysis.diffPercent > 0 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-slate-100 text-slate-700'
+                    }`}>
+                      <span>💰</span>
+                      <span>{t.priceAnalysis}:</span>
+                      <span className="font-medium">
+                        {selectedProperty.negotiationDetails.priceAnalysis.diffPercent > 0 ? (
+                          <>{selectedProperty.negotiationDetails.priceAnalysis.diffPercent}% {t.belowAverage}</>
+                        ) : (
+                          <>{Math.abs(selectedProperty.negotiationDetails.priceAnalysis.diffPercent)}% {t.aboveAverage}</>
+                        )}
+                      </span>
+                      {selectedProperty.negotiationDetails.priceAnalysis.diffPercent > 0 && (
+                        <span className="ml-auto font-bold">+{selectedProperty.negotiationDetails.priceAnalysis.diffPercent >= 20 ? 25 : selectedProperty.negotiationDetails.priceAnalysis.diffPercent >= 10 ? 20 : 10}</span>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Durée en ligne */}
+                  {selectedProperty.daysOnline > 14 && (
+                    <div className="flex items-center gap-2 bg-sky-100 text-sky-700 px-3 py-2 rounded-lg">
+                      <span>📅</span>
+                      <span>{t.listingOld}:</span>
+                      <span className="font-medium">{selectedProperty.daysOnline} {t.daysOnline}</span>
+                      <span className="ml-auto font-bold">+{selectedProperty.daysOnline > 60 ? 20 : selectedProperty.daysOnline > 30 ? 15 : 5}</span>
+                    </div>
+                  )}
+                  
+                  {/* Peu de photos */}
+                  {selectedProperty.negotiationDetails?.photoAnalysis?.verdict !== 'good' && (
+                    <div className="flex items-center gap-2 bg-purple-100 text-purple-700 px-3 py-2 rounded-lg">
+                      <span>📷</span>
+                      <span>{t.fewPhotos}</span>
+                      <span className="ml-auto font-bold">+{selectedProperty.negotiationDetails?.photoAnalysis?.verdict === 'none' ? 10 : 5}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Property Details Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="bg-slate-50 p-4 rounded-lg text-center">
-                  <p className="text-2xl font-bold text-sky-600">{selectedProperty.floorArea}</p>
+                  <p className="text-2xl font-bold text-sky-600">{selectedProperty.floorArea || '?'}</p>
                   <p className="text-sm text-gray-600">m²</p>
                 </div>
                 <div className="bg-slate-50 p-4 rounded-lg text-center">
@@ -602,13 +788,39 @@ export default function SearchPage() {
                   <p className="text-sm text-gray-600">{t.bathrooms}</p>
                 </div>
                 <div className="bg-slate-50 p-4 rounded-lg text-center">
-                  <p className="text-2xl font-bold text-sky-600">{selectedProperty.score}%</p>
-                  <p className="text-sm text-gray-600">{t.score}</p>
+                  <p className="text-2xl font-bold text-sky-600">{selectedProperty.daysOnline || '?'}</p>
+                  <p className="text-sm text-gray-600">{t.daysOnline}</p>
                 </div>
               </div>
-              <div className="flex gap-4 pt-4 border-t">
-                <button onClick={() => window.open(selectedProperty.url, '_blank')} className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-sky-400 text-white rounded-lg font-bold">{t.viewOriginal}</button>
-                <button onClick={() => setSelectedProperty(null)} className="px-6 py-3 border border-slate-300 rounded-lg font-medium">{t.close}</button>
+              
+              {/* Address */}
+              {(selectedProperty.address || selectedProperty.district) && (
+                <div 
+                  className="flex items-start gap-3 p-4 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition"
+                  onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedProperty.address || selectedProperty.district + ' ' + selectedProperty.city)}`, '_blank')}
+                >
+                  <MapPin className="w-5 h-5 text-sky-500 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-medium">{selectedProperty.address || `${selectedProperty.district}, ${selectedProperty.city}`}</p>
+                    <p className="text-sm text-sky-600">{t.viewOnMap} →</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Actions */}
+              <div className="flex gap-3 pt-4 border-t">
+                <button 
+                  onClick={() => window.open(selectedProperty.url, '_blank')} 
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-sky-400 text-white rounded-lg font-bold hover:from-blue-600 hover:to-sky-500 transition"
+                >
+                  {t.viewOriginal} →
+                </button>
+                <button 
+                  onClick={() => setSelectedProperty(null)} 
+                  className="px-6 py-3 border border-slate-300 rounded-lg font-medium hover:bg-slate-50 transition"
+                >
+                  {t.close}
+                </button>
               </div>
             </div>
           </div>
