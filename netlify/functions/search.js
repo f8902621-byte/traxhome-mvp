@@ -521,14 +521,19 @@ exports.handler = async (event) => {
       let keywords = [];
       
       // Mapping des types vers les codes Chotot et mots-clés
+      // CODES CHOTOT VÉRIFIÉS:
+      // 1010 = Căn hộ/Chung cư (Apartment)
+      // 1020 = Nhà ở (House)
+      // 1030 = Biệt thự (Villa)
+      // 1040 = Đất (Land)
       if (type.includes('căn hộ') || type.includes('chung cư') || type.includes('apartment')) {
-        categoryCode = 1020; // Căn hộ/Chung cư
+        categoryCode = 1010; // Căn hộ/Chung cư
         keywords = ['căn hộ', 'chung cư', 'apartment', 'penthouse'];
       } else if (type.includes('biệt thự') || type.includes('villa')) {
         categoryCode = 1030; // Biệt thự
         keywords = ['biệt thự', 'villa'];
       } else if (type.includes('nhà') || type.includes('house')) {
-        categoryCode = 1010; // Nhà ở
+        categoryCode = 1020; // Nhà ở
         keywords = ['nhà'];
       } else if (type.includes('đất') || type.includes('land')) {
         categoryCode = 1040; // Đất
