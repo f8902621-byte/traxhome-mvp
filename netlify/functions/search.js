@@ -7,7 +7,7 @@ const APIFY_ACTOR_ID = process.env.APIFY_ACTOR_ID;
 const CHOTOT_REGIONS = {
   'ho chi minh': '13000',
   'ha noi': '12000',
-  'da nang': '15000',
+  'da nang': '3017',
   'binh duong': '13100',
   'dong nai': '13200',
   'hai phong': '12100',
