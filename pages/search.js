@@ -45,6 +45,13 @@ export default function SearchPage() {
     }
   }, []);
 
+  // Lire la langue depuis l'URL query param
+  useEffect(() => {
+    if (router.query.lang && ['vn', 'en', 'fr'].includes(router.query.lang)) {
+      setLanguage(router.query.lang);
+    }
+  }, [router.query.lang]);
+
   const t = {
     vn: {
       menu: 'Menu', searchParams: 'Tham số Tìm kiếm', backToHome: 'Trang chủ',
@@ -71,6 +78,7 @@ export default function SearchPage() {
       loadSearch: 'Tải', deleteSearch: 'Xóa', searchSaved: 'Đã lưu tìm kiếm!',
       hasParking: 'Parking', hasPool: 'Hồ bơi', streetWidth: 'Đường rộng (m)',
       noResults: 'Không tìm thấy kết quả',
+      comingSoon: 'Sắp ra mắt',
     },
     en: {
       menu: 'Menu', searchParams: 'Search Parameters', backToHome: 'Home',
@@ -97,6 +105,7 @@ export default function SearchPage() {
       loadSearch: 'Load', deleteSearch: 'Delete', searchSaved: 'Search saved!',
       hasParking: 'Parking', hasPool: 'Pool', streetWidth: 'Street min (m)',
       noResults: 'No results found',
+      comingSoon: 'Coming soon',
     },
     fr: {
       menu: 'Menu', searchParams: 'Paramètres', backToHome: 'Accueil',
@@ -123,6 +132,7 @@ export default function SearchPage() {
       loadSearch: 'Charger', deleteSearch: 'Supprimer', searchSaved: 'Recherche sauvegardée!',
       hasParking: 'Parking', hasPool: 'Piscine', streetWidth: 'Rue min (m)',
       noResults: 'Aucun résultat trouvé',
+      comingSoon: 'Bientôt',
     }
   }[language];
 
@@ -326,7 +336,7 @@ export default function SearchPage() {
                         : searchParams.sources.includes(source.id) ? 'bg-sky-500 text-white' : 'bg-slate-100 text-gray-700 hover:bg-slate-200'
                     }`}
                   >
-                    {source.name} {!source.active && '(Bientôt)'}
+                    {source.name} {!source.active && `(${t.comingSoon})`}
                   </button>
                 ))}
               </div>
