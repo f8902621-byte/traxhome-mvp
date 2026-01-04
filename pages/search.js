@@ -639,8 +639,14 @@ export default function SearchPage() {
                         <div className="text-xs text-gray-500 mb-2">📅 {prop.postedOn}</div>
                       )}
                       <button onClick={() => setSelectedProperty(prop)} className="w-full px-4 py-2 bg-orange-400 text-white rounded-lg hover:bg-orange-500 font-medium">
-                        {t.viewDetails}
-                      </button>
+                      <a 
+  href={prop.url} 
+  onClick={(e) => { e.preventDefault(); setSelectedProperty(prop); }}
+  onAuxClick={(e) => { if (e.button === 1) window.open(prop.url, '_blank'); }}
+  className="block w-full px-4 py-2 bg-orange-400 text-white rounded-lg hover:bg-orange-500 font-medium text-center cursor-pointer"
+>
+  {t.viewDetails}
+</a>
                     </div>
                   </div>
                 ))}
