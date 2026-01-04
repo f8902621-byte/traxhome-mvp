@@ -218,13 +218,21 @@ export default function SearchPage() {
     { vn: 'Hà Nội', en: 'Hanoi', fr: 'Hanoï' },
     { vn: 'Đà Nẵng', en: 'Da Nang', fr: 'Da Nang' },
     { vn: 'Bình Dương', en: 'Binh Duong', fr: 'Binh Duong' },
+    { vn: 'Khánh Hòa', en: 'Khanh Hoa (Nha Trang)', fr: 'Khanh Hoa (Nha Trang)' },
+    { vn: 'Cần Thơ', en: 'Can Tho', fr: 'Can Tho' },
+    { vn: 'Hải Phòng', en: 'Hai Phong', fr: 'Hai Phong' },
+    { vn: 'Bà Rịa - Vũng Tàu', en: 'Ba Ria - Vung Tau', fr: 'Ba Ria - Vung Tau' },
   ];
 
   const districtsByCity = {
     'Hồ Chí Minh': ['Quận 1', 'Quận 2', 'Quận 3', 'Quận 7', 'Bình Thạnh', 'Gò Vấp', 'Phú Nhuận', 'Tân Bình', 'Thủ Đức'],
     'Hà Nội': ['Ba Đình', 'Hoàn Kiếm', 'Hai Bà Trưng', 'Đống Đa', 'Tây Hồ', 'Cầu Giấy'],
-    'Đà Nẵng': ['Hải Châu', 'Thanh Khê', 'Sơn Trà', 'Ngũ Hành Sơn'],
-    'Bình Dương': ['Thủ Dầu Một', 'Dĩ An', 'Thuận An']
+    'Đà Nẵng': ['Hải Châu', 'Thanh Khê', 'Sơn Trà', 'Ngũ Hành Sơn', 'Liên Chiểu'],
+    'Bình Dương': ['Thủ Dầu Một', 'Dĩ An', 'Thuận An'],
+    'Khánh Hòa': ['Nha Trang', 'Cam Ranh', 'Diên Khánh'],
+    'Cần Thơ': ['Ninh Kiều', 'Bình Thủy', 'Cái Răng'],
+    'Hải Phòng': ['Hồng Bàng', 'Lê Chân', 'Ngô Quyền', 'Đồ Sơn'],
+    'Bà Rịa - Vũng Tàu': ['Vũng Tàu', 'Bà Rịa', 'Long Điền', 'Phú Mỹ'],
   };
 
   const currentDistricts = districtsByCity[searchParams.city] || [];
