@@ -570,14 +570,20 @@ const { city, district, propertyType, priceMin, priceMax, livingAreaMin, livingA
     
     // Déduplication
    let unique = deduplicateResults(allResults);
- // Filtre keywordsOnly - ne garder que les annonces avec mots-clés urgents
-if (keywordsOnly && keywords && keywords.length > 0) {
+// Filtre keywordsOnly - ne garder que les annonces avec mots-clés urgents
+if (keywordsOnly) {
   const before = unique.length;
+  // Toujours chercher les mots-clés vietnamiens (langue des annonces)
+  const vietnameseKeywords = [
+    'bán gấp', 'bán nhanh', 'cần bán nhanh', 'kẹt tiền', 'cần tiền', 
+    'giá rẻ', 'ngộp bank', 'chính chủ', 'miễn trung gian', 
+    'giá thương lượng', 'bán lỗ', 'cắt lỗ', 'hạ giá', 'thanh lý'
+  ];
   unique = unique.filter(item => {
     const title = removeVietnameseAccents(item.title || '');
-    return keywords.some(kw => title.includes(removeVietnameseAccents(kw)));
+    return vietnameseKeywords.some(kw => title.includes(removeVietnameseAccents(kw)));
   });
-  console.log(`Filtre keywordsOnly: ${before} → ${unique.length} (mots-clés: ${keywords.join(', ')})`);
+  console.log(`Filtre keywordsOnly: ${before} → ${unique.length}`);
 }
     let sortedResults = [...unique];
     if (sortBy === 'price_asc') {
