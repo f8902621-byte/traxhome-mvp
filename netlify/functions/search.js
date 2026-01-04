@@ -570,12 +570,12 @@ const { city, district, propertyType, priceMin, priceMax, livingAreaMin, livingA
     
     // Déduplication
    let unique = deduplicateResults(allResults);
-    // Filtre keywordsOnly - ne garder que les annonces avec mots-clés urgents
+ // Filtre keywordsOnly - ne garder que les annonces avec mots-clés urgents
 if (keywordsOnly && keywords && keywords.length > 0) {
   const before = unique.length;
   unique = unique.filter(item => {
-    const title = (item.title || '').toLowerCase();
-    return keywords.some(kw => title.includes(kw.toLowerCase()));
+    const title = removeVietnameseAccents(item.title || '');
+    return keywords.some(kw => title.includes(removeVietnameseAccents(kw)));
   });
   console.log(`Filtre keywordsOnly: ${before} → ${unique.length} (mots-clés: ${keywords.join(', ')})`);
 }
