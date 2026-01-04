@@ -638,7 +638,7 @@ export default function SearchPage() {
                       {prop.postedOn && (
                         <div className="text-xs text-gray-500 mb-2">📅 {prop.postedOn}</div>
                       )}
-                      <button onClick={() => setSelectedProperty(prop)} className="w-full px-4 py-2 bg-orange-400 text-white rounded-lg hover:bg-orange-500 font-medium">
+
                       <a 
   href={prop.url} 
   onClick={(e) => { e.preventDefault(); setSelectedProperty(prop); }}
