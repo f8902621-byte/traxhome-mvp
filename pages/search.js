@@ -801,7 +801,7 @@ export default function SearchPage() {
               {/* Property Details Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="bg-slate-50 p-4 rounded-lg text-center">
-                  <p className="text-2xl font-bold text-sky-600">{selectedProperty.floorArea || '?'}</p>
+                  <p className="text-2xl font-bold text-sky-600">{Math.round(selectedProperty.floorArea) || '?'}</p>
                   <p className="text-sm text-gray-600">m²</p>
                 </div>
                 <div className="bg-slate-50 p-4 rounded-lg text-center">
