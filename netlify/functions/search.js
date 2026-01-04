@@ -484,7 +484,7 @@ exports.handler = async (event) => {
   let body = {};
   try { body = JSON.parse(event.body || '{}'); } catch (e) { body = {}; }
 
-  const { city, district, propertyType, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, sources, sortBy } = body;
+const { city, district, propertyType, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, sources, sortBy, keywords, keywordsOnly } = body;
 
   console.log('=== NOUVELLE RECHERCHE ===');
   console.log('Params:', JSON.stringify({ city, propertyType, priceMin, priceMax, sortBy, sources }));
@@ -569,10 +569,16 @@ exports.handler = async (event) => {
     }
     
     // Déduplication
-    const unique = deduplicateResults(allResults);
-    console.log(`Après dédup: ${unique.length} (${allResults.length - unique.length} doublons)`);
-    
-    // Tri final
+   let unique = deduplicateResults(allResults);
+    // Filtre keywordsOnly - ne garder que les annonces avec mots-clés urgents
+if (keywordsOnly && keywords && keywords.length > 0) {
+  const before = unique.length;
+  unique = unique.filter(item => {
+    const title = (item.title || '').toLowerCase();
+    return keywords.some(kw => title.includes(kw.toLowerCase()));
+  });
+  console.log(`Filtre keywordsOnly: ${before} → ${unique.length} (mots-clés: ${keywords.join(', ')})`);
+}
     let sortedResults = [...unique];
     if (sortBy === 'price_asc') {
       sortedResults.sort((a, b) => a.price - b.price);
