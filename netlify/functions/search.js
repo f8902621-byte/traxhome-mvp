@@ -2,208 +2,10 @@ const APIFY_API_TOKEN = process.env.APIFY_API_TOKEN;
 const APIFY_ACTOR_ID = process.env.APIFY_ACTOR_ID;
 
 // ============================================
-// DONNÉES CBRE VIETNAM Q3 2025
-// Source: CBRE Vietnam Research & Consulting
-// ============================================
-const CBRE_DATA = {
-  // Ho Chi Minh City
-  hcmc: {
-    condo: {
-      primary: { price: 87000000, growth: 31 },
-      secondary: { price: 60000000, growth: 25 },
-    },
-    landed: {
-      primary: { price: 303000000, growth: 15 },
-      secondary: { price: 167000000, growth: 10 },
-    },
-    districts: {
-      'quan 1': 150000000,
-      'district 1': 150000000,
-      'quan 2': 85000000,
-      'district 2': 85000000,
-      'thu duc': 85000000,
-      'quan 3': 120000000,
-      'district 3': 120000000,
-      'quan 7': 70000000,
-      'district 7': 70000000,
-      'binh thanh': 65000000,
-      'phu nhuan': 75000000,
-      'tan binh': 55000000,
-      'go vap': 50000000,
-      'binh tan': 40000000,
-      'quan 9': 45000000,
-      'district 9': 45000000,
-      'quan 12': 35000000,
-      'district 12': 35000000,
-    }
-  },
-  // Hanoi
-  hanoi: {
-    condo: {
-      primary: { price: 90000000, growth: 41 },
-      secondary: { price: 58000000, growth: 19 },
-    },
-    landed: {
-      primary: { price: 186000000, growth: 12 },
-      secondary: { price: 198000000, growth: 8 },
-    },
-    districts: {
-      'hoan kiem': 200000000,
-      'ba dinh': 150000000,
-      'tay ho': 120000000,
-      'cau giay': 85000000,
-      'dong da': 90000000,
-      'hai ba trung': 80000000,
-      'thanh xuan': 65000000,
-      'ha dong': 55000000,
-      'long bien': 50000000,
-      'nam tu liem': 60000000,
-      'hoang mai': 45000000,
-    }
-  },
-  // Da Nang
-  danang: {
-    condo: {
-      primary: { price: 45000000, growth: 5 },
-      secondary: { price: 35000000, growth: 3 },
-    },
-    landed: {
-      primary: { price: 80000000, growth: 8 },
-      secondary: { price: 65000000, growth: 5 },
-    },
-    districts: {
-      'hai chau': 55000000,
-      'thanh khe': 40000000,
-      'son tra': 50000000,
-      'ngu hanh son': 60000000,
-      'lien chieu': 35000000,
-    }
-  },
-  // Binh Duong
-  binhduong: {
-    condo: {
-      primary: { price: 35000000, growth: 10 },
-      secondary: { price: 28000000, growth: 8 },
-    },
-    landed: {
-      primary: { price: 45000000, growth: 12 },
-      secondary: { price: 38000000, growth: 10 },
-    },
-    districts: {
-      'thu dau mot': 40000000,
-      'di an': 35000000,
-      'thuan an': 32000000,
-    }
-  },
-  metadata: {
-    source: 'CBRE Vietnam Research & Consulting',
-    period: 'Q3 2025',
-    disclaimer: '© CBRE Vietnam. Données indicatives.',
-  }
-};
-
-function normalizeCityKey(city) {
-  if (!city) return null;
-  const c = city.toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd').replace(/Đ/g, 'd');
-  
-  if (c.includes('ho chi minh') || c.includes('hcm') || c.includes('saigon') || c.includes('sai gon')) return 'hcmc';
-  if (c.includes('ha noi') || c.includes('hanoi')) return 'hanoi';
-  if (c.includes('da nang') || c.includes('danang')) return 'danang';
-  if (c.includes('binh duong')) return 'binhduong';
-  return null;
-}
-
-function normalizeDistrictKey(district) {
-  if (!district) return null;
-  return district.toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd').replace(/Đ/g, 'd')
-    .replace(/[^a-z0-9\s]/g, '')
-    .trim();
-}
-
-function getCBREAveragePrice(city, propertyType) {
-  const cityKey = normalizeCityKey(city);
-  if (!cityKey || !CBRE_DATA[cityKey]) return null;
-  
-  const cityData = CBRE_DATA[cityKey];
-  const type = (propertyType || '').toLowerCase();
-  
-  let segment = 'condo';
-  if (type.includes('nha') || type.includes('biet thu') || type.includes('villa') || type.includes('house')) {
-    segment = 'landed';
-  }
-  
-  return cityData[segment]?.secondary?.price || cityData.condo?.secondary?.price || null;
-}
-
-function getCBREDistrictPrice(city, district) {
-  const cityKey = normalizeCityKey(city);
-  if (!cityKey || !CBRE_DATA[cityKey]) return null;
-  
-  const districtKey = normalizeDistrictKey(district);
-  if (!districtKey) return null;
-  
-  const districts = CBRE_DATA[cityKey].districts || {};
-  
-  for (const [key, price] of Object.entries(districts)) {
-    if (districtKey.includes(key) || key.includes(districtKey)) {
-      return price;
-    }
-  }
-  
-  return null;
-}
-
-function analyzePriceVsCBRE(item, city, propertyType) {
-  if (!item.area || item.area <= 0 || !item.price || item.price <= 0) {
-    return null;
-  }
-  
-  const itemPricePerM2 = item.price / item.area;
-  
-  let referencePrice = getCBREDistrictPrice(city, item.district);
-  let referenceType = 'district';
-  
-  if (!referencePrice) {
-    referencePrice = getCBREAveragePrice(city, propertyType);
-    referenceType = 'city';
-  }
-  
-  if (!referencePrice) return null;
-  
-  const diffPercent = Math.round(((referencePrice - itemPricePerM2) / referencePrice) * 100);
-  
-  return {
-    itemPricePerM2: Math.round(itemPricePerM2),
-    cbrePrice: referencePrice,
-    diffPercent,
-    referenceType,
-    location: item.district || city,
-    dataSource: CBRE_DATA.metadata.source,
-    dataPeriod: CBRE_DATA.metadata.period,
-  };
-}
-
-function getCBREPriceScore(cbreAnalysis) {
-  if (!cbreAnalysis) return 0;
-  
-  const diff = cbreAnalysis.diffPercent;
-  
-  if (diff >= 25) return 25;
-  if (diff >= 15) return 20;
-  if (diff >= 10) return 15;
-  if (diff >= 5) return 10;
-  if (diff >= 0) return 5;
-  return 0;
-}
-
-// ============================================
 // MAPPING DES VILLES → CODE RÉGION CHOTOT
 // ============================================
 const CHOTOT_REGIONS = {
+  // Codes vérifiés Janvier 2026
   'ho chi minh': '13000',
   'ha noi': '12000',
   'da nang': '3017',
@@ -217,6 +19,7 @@ const CHOTOT_REGIONS = {
   'ba ria vung tau': '2010',
 };
 
+// Fonction pour supprimer les accents vietnamiens
 function removeVietnameseAccents(str) {
   return str
     .normalize('NFD')
@@ -228,11 +31,12 @@ function removeVietnameseAccents(str) {
 }
 
 function getChototRegion(city) {
-  if (!city) return '13000';
+  if (!city) return '13000'; // Défaut: HCM
   
   const cityNormalized = removeVietnameseAccents(city);
   console.log(`City mapping: "${city}" → normalized: "${cityNormalized}"`);
   
+  // Correspondance directe
   for (const [cityName, code] of Object.entries(CHOTOT_REGIONS)) {
     if (cityNormalized.includes(cityName) || cityName.includes(cityNormalized)) {
       console.log(`City matched: "${cityName}" → code ${code}`);
@@ -240,6 +44,7 @@ function getChototRegion(city) {
     }
   }
   
+  // Mappings spécifiques supplémentaires
   if (cityNormalized.includes('sai gon') || cityNormalized.includes('saigon') || cityNormalized.includes('hcm') || cityNormalized.includes('tphcm')) {
     return '13000';
   }
@@ -257,11 +62,11 @@ function getChototRegion(city) {
   }
   
   console.log(`City not found, defaulting to HCM (13000)`);
-  return '13000';
+  return '13000'; // Défaut: HCM
 }
 
 // ============================================
-// CHOTOT API
+// CHOTOT API - 300 RÉSULTATS AVEC TRI PAR PRIX
 // ============================================
 async function fetchChotot(params) {
   const { city, priceMin, priceMax, sortBy } = params;
@@ -269,18 +74,21 @@ async function fetchChotot(params) {
   const regionCode = getChototRegion(city);
   console.log(`Chotot: ville="${city}" → region=${regionCode}`);
   
+  // Paramètres de base
   const baseParams = new URLSearchParams();
-  baseParams.append('cg', '1000');
+  baseParams.append('cg', '1000'); // Immobilier
   baseParams.append('region_v2', regionCode);
-  baseParams.append('st', 's,k');
+  baseParams.append('st', 's,k'); // À vendre
   baseParams.append('limit', '50');
   
+  // Filtre prix
   if (priceMin || priceMax) {
     const minPrice = priceMin ? Math.round(parseFloat(priceMin) * 1000000000) : 0;
     const maxPrice = priceMax ? Math.round(parseFloat(priceMax) * 1000000000) : 999999999999;
     baseParams.append('price', `${minPrice}-${maxPrice}`);
   }
   
+  // Tri par prix si demandé
   if (sortBy === 'price_asc') {
     baseParams.append('sort_by', 'price');
     baseParams.append('sort_dir', 'asc');
@@ -289,6 +97,7 @@ async function fetchChotot(params) {
     baseParams.append('sort_dir', 'desc');
   }
   
+  // 6 appels paginés = 300 résultats max
   const allAds = [];
   const offsets = [0, 50, 100, 150, 200, 250];
   
@@ -311,14 +120,16 @@ async function fetchChotot(params) {
   
   console.log(`Chotot TOTAL: ${allAds.length} annonces`);
   
+  // Mapper et filtrer prix > 0
   return allAds
-    .filter(ad => ad.price && ad.price > 0)
+    .filter(ad => ad.price && ad.price > 0) // Exclure prix "à négocier"
     .map(ad => ({
       id: `chotot_${ad.list_id}`,
       title: ad.subject || 'Không có tiêu đề',
       price: ad.price || 0,
       floorAreaSqm: ad.size || ad.area || 0,
       area: ad.size || ad.area || 0,
+      // Adresse complète : street + ward + district
       address: [ad.street_name, ad.ward_name, ad.area_name].filter(Boolean).join(', ') || '',
       street: ad.street_name || '',
       ward: ad.ward_name || '',
@@ -339,7 +150,7 @@ async function fetchChotot(params) {
 }
 
 // ============================================
-// NHADAT247 API
+// NHADAT247 API (données pré-scrapées HCM)
 // ============================================
 async function fetchNhadat247() {
   const NHADAT247_ACTOR_ID = 'outlandish_bookcases~nhadat247-scraper';
@@ -365,8 +176,8 @@ async function fetchNhadat247() {
       url: item.url || '',
       source: 'nhadat247.com.vn',
       postedOn: item.postedDate || '',
-      list_time: 0,
-      category: null,
+      list_time: 0, // Pas disponible
+      category: null, // Pas disponible - filtrage par mots-clés uniquement
     }));
   } catch (error) {
     console.error('Nhadat247 error:', error);
@@ -375,7 +186,7 @@ async function fetchNhadat247() {
 }
 
 // ============================================
-// BATDONGSAN API
+// BATDONGSAN API (données pré-scrapées - actuellement bloqué)
 // ============================================
 async function fetchBatdongsan() {
   try {
@@ -405,7 +216,7 @@ async function fetchBatdongsan() {
 }
 
 // ============================================
-// FILTRES
+// FILTRES POST-API
 // ============================================
 function applyFilters(results, filters) {
   const { city, district, propertyType, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms } = filters;
@@ -486,8 +297,10 @@ function deduplicateResults(results) {
 }
 
 // ============================================
-// SCORE DE NÉGOCIATION (avec CBRE)
+// SCORE DE NÉGOCIATION INTELLIGENT
 // ============================================
+
+// Mots-clés urgents avec poids
 const URGENT_KEYWORDS = [
   { pattern: /bán\s*gấp/i, weight: 25, label: 'Bán gấp' },
   { pattern: /cần\s*bán\s*gấp/i, weight: 25, label: 'Cần bán gấp' },
@@ -503,12 +316,11 @@ const URGENT_KEYWORDS = [
   { pattern: /hạ\s*giá/i, weight: 20, label: 'Hạ giá' },
 ];
 
-function calculateNegotiationScore(item, avgPricePerM2, city, propertyType) {
+function calculateNegotiationScore(item, avgPricePerM2) {
   let score = 0;
   const details = {
     urgentKeywords: [],
     priceAnalysis: null,
-    cbreAnalysis: null,
     listingAge: null,
     photoAnalysis: null,
     priceType: null,
@@ -516,7 +328,7 @@ function calculateNegotiationScore(item, avgPricePerM2, city, propertyType) {
   
   const title = (item.title || '').toLowerCase();
   
-  // 1. Mots-clés urgents (max 25 points)
+  // 1. Mots-clés urgents (max 25 points - on prend le plus fort)
   let maxUrgentWeight = 0;
   for (const kw of URGENT_KEYWORDS) {
     if (kw.pattern.test(title) || kw.pattern.test(item.title || '')) {
@@ -528,12 +340,8 @@ function calculateNegotiationScore(item, avgPricePerM2, city, propertyType) {
   }
   score += maxUrgentWeight;
   
-  // 2. Analyse prix CBRE (prioritaire, max 25 points)
-  const cbreAnalysis = analyzePriceVsCBRE(item, city, propertyType);
-  if (cbreAnalysis) {
-    details.cbreAnalysis = cbreAnalysis;
-    score += getCBREPriceScore(cbreAnalysis);
-  } else if (item.area > 0 && item.price > 0 && avgPricePerM2 > 0) {
+  // 2. Analyse prix/m² vs moyenne (max 25 points)
+  if (item.area > 0 && item.price > 0 && avgPricePerM2 > 0) {
     const itemPricePerM2 = item.price / item.area;
     const priceDiff = ((avgPricePerM2 - itemPricePerM2) / avgPricePerM2) * 100;
     
@@ -544,16 +352,16 @@ function calculateNegotiationScore(item, avgPricePerM2, city, propertyType) {
     };
     
     if (priceDiff >= 20) {
-      score += 25;
+      score += 25; // 20%+ moins cher
       details.priceAnalysis.verdict = 'excellent';
     } else if (priceDiff >= 10) {
-      score += 20;
+      score += 20; // 10-20% moins cher
       details.priceAnalysis.verdict = 'good';
     } else if (priceDiff >= 5) {
-      score += 10;
+      score += 10; // 5-10% moins cher
       details.priceAnalysis.verdict = 'fair';
     } else if (priceDiff >= 0) {
-      score += 5;
+      score += 5; // Prix moyen
       details.priceAnalysis.verdict = 'average';
     } else {
       details.priceAnalysis.verdict = 'above_average';
@@ -566,15 +374,23 @@ function calculateNegotiationScore(item, avgPricePerM2, city, propertyType) {
   
   let daysOnline = 0;
   if (listTime > 0) {
+    // list_time peut être en secondes ou millisecondes selon la source
+    // Si > 10000000000, c'est en millisecondes, sinon en secondes
     const listTimeMs = listTime > 10000000000 ? listTime : listTime * 1000;
     daysOnline = Math.floor((Date.now() - listTimeMs) / (1000 * 60 * 60 * 24));
-    if (daysOnline < 0 || daysOnline > 3650) daysOnline = 0;
+    // Sécurité : si le résultat est négatif ou absurde, on met 0
+    if (daysOnline < 0 || daysOnline > 3650) {
+      daysOnline = 0;
+    }
   } else if (postedOn) {
+    // Essayer de parser la date vietnamienne (dd/mm/yyyy)
     const match = postedOn.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
     if (match) {
       const postedDate = new Date(match[3], match[2] - 1, match[1]);
       daysOnline = Math.floor((Date.now() - postedDate.getTime()) / (1000 * 60 * 60 * 24));
-      if (daysOnline < 0 || daysOnline > 3650) daysOnline = 0;
+      if (daysOnline < 0 || daysOnline > 3650) {
+        daysOnline = 0;
+      }
     }
   }
   
@@ -598,10 +414,10 @@ function calculateNegotiationScore(item, avgPricePerM2, city, propertyType) {
   details.photoAnalysis = { count: numPhotos };
   
   if (numPhotos === 0) {
-    score += 10;
+    score += 10; // Pas de photo = vendeur amateur/pressé
     details.photoAnalysis.verdict = 'none';
   } else if (numPhotos <= 2) {
-    score += 5;
+    score += 5; // Peu de photos
     details.photoAnalysis.verdict = 'few';
   } else {
     details.photoAnalysis.verdict = 'good';
@@ -614,24 +430,36 @@ function calculateNegotiationScore(item, avgPricePerM2, city, propertyType) {
   
   if (isRoundPrice && priceInBillion >= 1) {
     score += 5;
-    details.priceType = 'round';
+    details.priceType = 'round'; // Prix rond = plus négociable
   } else {
     details.priceType = 'precise';
   }
   
+  // Score final (plafonné à 100)
   const finalScore = Math.min(100, score);
   
+  // Niveau de négociation
   let negotiationLevel;
-  if (finalScore >= 70) negotiationLevel = 'excellent';
-  else if (finalScore >= 50) negotiationLevel = 'good';
-  else if (finalScore >= 30) negotiationLevel = 'moderate';
-  else negotiationLevel = 'low';
+  if (finalScore >= 70) {
+    negotiationLevel = 'excellent';
+  } else if (finalScore >= 50) {
+    negotiationLevel = 'good';
+  } else if (finalScore >= 30) {
+    negotiationLevel = 'moderate';
+  } else {
+    negotiationLevel = 'low';
+  }
   
-  return { score: finalScore, level: negotiationLevel, details };
+  return {
+    score: finalScore,
+    level: negotiationLevel,
+    details,
+  };
 }
 
+// Fonction legacy pour compatibilité
 function calculateScore(item) {
-  const result = calculateNegotiationScore(item, 50000000, null, null);
+  const result = calculateNegotiationScore(item, 50000000);
   return result.score;
 }
 
@@ -664,11 +492,13 @@ exports.handler = async (event) => {
   try {
     let allResults = [];
     
+    // CHOTOT - Source principale (300 résultats, toutes villes)
     if (sources?.includes('chotot')) {
       const chototResults = await fetchChotot({ city, priceMin, priceMax, sortBy });
       allResults.push(...chototResults);
     }
     
+    // BATDONGSAN - Données pré-scrapées (limité)
     if (sources?.includes('batdongsan')) {
       const batdongsanResults = await fetchBatdongsan();
       const filtered = applyFilters(batdongsanResults, { city, district, propertyType, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms });
@@ -676,7 +506,9 @@ exports.handler = async (event) => {
       allResults.push(...filtered);
     }
     
+    // NHADAT247 - Données pré-scrapées HCM UNIQUEMENT
     if (sources?.includes('nhadat247')) {
+      // Nhadat247 n'a que des données pour Hồ Chí Minh
       const cityNormalized = removeVietnameseAccents(city || '');
       const isHCM = cityNormalized.includes('ho chi minh') || 
                     cityNormalized.includes('saigon') || 
@@ -695,29 +527,35 @@ exports.handler = async (event) => {
     
     console.log(`TOTAL BRUT: ${allResults.length}`);
     
+    // Filtre type de bien global (pour Chotot qui ne filtre pas côté API)
     if (propertyType && !propertyType.toLowerCase().includes('tất cả') && !propertyType.toLowerCase().includes('all')) {
       const type = propertyType.toLowerCase();
       let categoryCode = null;
       let kwds = [];
       
+      // Mapping des types vers les codes Chotot et mots-clés
       if (type.includes('căn hộ') || type.includes('chung cư') || type.includes('apartment')) {
-        categoryCode = 1010;
+        categoryCode = 1010; // Căn hộ/Chung cư
         kwds = ['căn hộ', 'chung cư', 'apartment', 'penthouse'];
       } else if (type.includes('biệt thự') || type.includes('villa')) {
-        categoryCode = 1030;
+        categoryCode = 1030; // Biệt thự
         kwds = ['biệt thự', 'villa'];
       } else if (type.includes('nhà') || type.includes('house')) {
-        categoryCode = 1020;
+        categoryCode = 1020; // Nhà ở
         kwds = ['nhà'];
       } else if (type.includes('đất') || type.includes('land')) {
-        categoryCode = 1040;
+        categoryCode = 1040; // Đất
         kwds = ['đất', 'lô đất'];
       }
       
       if (categoryCode || kwds.length > 0) {
         const before = allResults.length;
         allResults = allResults.filter(item => {
-          if (item.category && categoryCode) return item.category === categoryCode;
+          // Priorité au category code si disponible
+          if (item.category && categoryCode) {
+            return item.category === categoryCode;
+          }
+          // Sinon filtre par mots-clés dans le titre
           const t = (item.title || '').toLowerCase();
           return kwds.some(k => t.includes(k));
         });
@@ -725,10 +563,13 @@ exports.handler = async (event) => {
       }
     }
     
+    // Déduplication
     let unique = deduplicateResults(allResults);
     
+    // Filtre keywordsOnly - ne garder que les annonces avec mots-clés urgents
     if (keywordsOnly) {
       const before = unique.length;
+      // Toujours chercher les mots-clés vietnamiens (langue des annonces)
       const vietnameseKeywords = [
         'bán gấp', 'bán nhanh', 'cần bán nhanh', 'kẹt tiền', 'cần tiền', 
         'giá rẻ', 'ngộp bank', 'chính chủ', 'miễn trung gian', 
@@ -747,10 +588,12 @@ exports.handler = async (event) => {
     } else if (sortBy === 'price_desc') {
       sortedResults.sort((a, b) => b.price - a.price);
     } else {
+      // Par défaut: tri par score
       sortedResults = sortedResults.map(item => ({ ...item, score: calculateScore(item) }));
       sortedResults.sort((a, b) => b.score - a.score);
     }
     
+    // Calculer le prix moyen au m² pour comparaison
     const validPricePerM2 = sortedResults
       .filter(item => item.area > 0 && item.price > 0)
       .map(item => item.price / item.area);
@@ -758,8 +601,10 @@ exports.handler = async (event) => {
       ? validPricePerM2.reduce((a, b) => a + b, 0) / validPricePerM2.length 
       : 50000000;
     
+    // Limiter à 100 résultats pour le frontend
     const results = sortedResults.slice(0, 100).map((item, i) => {
-      const negotiation = calculateNegotiationScore(item, avgPricePerM2, city, propertyType);
+      // Calculer le score de négociation détaillé
+      const negotiation = calculateNegotiationScore(item, avgPricePerM2);
       
       return {
         id: item.id || i,
@@ -777,10 +622,11 @@ exports.handler = async (event) => {
         images: item.images || [],
         url: item.url || '#',
         source: item.source || 'unknown',
+        // Score de négociation
         score: negotiation.score,
         negotiationLevel: negotiation.level,
         negotiationDetails: negotiation.details,
-        cbreAnalysis: negotiation.details.cbreAnalysis,
+        // Badges
         hasUrgentKeyword: negotiation.details.urgentKeywords.length > 0,
         urgentKeywords: negotiation.details.urgentKeywords,
         isNew: /hôm nay|phút|today/i.test(item.postedOn || ''),
@@ -796,10 +642,9 @@ exports.handler = async (event) => {
       avgPricePerSqm: Math.round(avgPricePerM2),
       totalResults: results.length,
       totalAvailable: unique.length,
-      cbreDataAvailable: !!normalizeCityKey(city),
     };
 
-    console.log(`FINAL: ${results.length} résultats, CBRE: ${stats.cbreDataAvailable ? 'OUI' : 'NON'}`);
+    console.log(`FINAL: ${results.length} résultats affichés, ${unique.length} disponibles, prix moyen/m²: ${Math.round(avgPricePerM2/1000000)}M`);
 
     return {
       statusCode: 200,
