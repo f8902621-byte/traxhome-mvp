@@ -113,6 +113,12 @@ export default function SearchPage() {
       belowMarket: 'dưới thị trường',
       aboveMarket: 'trên thị trường',
       cbreDisclaimer: '© CBRE Vietnam. Dữ liệu chỉ mang tính tham khảo.',
+      // Categories for property types
+      catApartment: '🏢 Căn hộ',
+      catHouse: '🏠 Nhà ở',
+      catCommercial: '🏪 Thương mại',
+      catLand: '🌳 Đất',
+      catOther: '📦 Khác',
     },
     en: {
       menu: 'Menu', searchParams: 'Search Parameters', backToHome: 'Home',
@@ -163,6 +169,12 @@ export default function SearchPage() {
       belowMarket: 'below market',
       aboveMarket: 'above market',
       cbreDisclaimer: '© CBRE Vietnam. Data for reference only.',
+      // Categories for property types
+      catApartment: '🏢 Apartments',
+      catHouse: '🏠 Houses',
+      catCommercial: '🏪 Commercial',
+      catLand: '🌳 Land',
+      catOther: '📦 Other',
     },
     fr: {
       menu: 'Menu', searchParams: 'Paramètres', backToHome: 'Accueil',
@@ -213,6 +225,12 @@ export default function SearchPage() {
       belowMarket: 'sous le marché',
       aboveMarket: 'au-dessus du marché',
       cbreDisclaimer: '© CBRE Vietnam. Données à titre indicatif.',
+      // Categories for property types
+      catApartment: '🏢 Appartements',
+      catHouse: '🏠 Maisons',
+      catCommercial: '🏪 Commercial',
+      catLand: '🌳 Terrain',
+      catOther: '📦 Autre',
     }
   }[language];
 
@@ -230,12 +248,31 @@ export default function SearchPage() {
     { vn: 'Bán lỗ', en: 'Selling at Loss', fr: 'Vente à Perte' }
   ];
 
+  // ============================================
+  // 15 TYPES DE BIENS COMPLETS
+  // ============================================
   const propertyTypes = [
-    { vn: 'Căn hộ chung cư', en: 'Apartment', fr: 'Appartement' },
-    { vn: 'Nhà ở', en: 'House', fr: 'Maison' },
-    { vn: 'Nhà biệt thự', en: 'Villa', fr: 'Villa' },
-    { vn: 'Tất cả nhà đất', en: 'All Properties', fr: 'Tous Biens' },
-    { vn: 'Đất', en: 'Land', fr: 'Terrain' },
+    // Tous biens
+    { vn: 'Tất cả nhà đất', en: 'All Properties', fr: 'Tous Biens', category: 'all' },
+    // Appartements
+    { vn: 'Căn hộ chung cư', en: 'Apartment', fr: 'Appartement', category: 'apartment' },
+    { vn: 'Căn hộ nghỉ dưỡng', en: 'Resort Condo', fr: 'Appart. Vacances', category: 'apartment' },
+    { vn: 'Studio', en: 'Studio', fr: 'Studio', category: 'apartment' },
+    // Maisons
+    { vn: 'Nhà ở', en: 'House', fr: 'Maison', category: 'house' },
+    { vn: 'Nhà biệt thự', en: 'Villa', fr: 'Villa', category: 'house' },
+    { vn: 'Nhà nghỉ dưỡng', en: 'Resort House', fr: 'Maison Vacances', category: 'house' },
+    // Commercial
+    { vn: 'Shophouse', en: 'Shophouse', fr: 'Shophouse', category: 'commercial' },
+    { vn: 'Văn phòng', en: 'Office', fr: 'Bureau', category: 'commercial' },
+    { vn: 'Cửa hàng', en: 'Shop', fr: 'Boutique', category: 'commercial' },
+    { vn: 'Mặt bằng', en: 'Premises', fr: 'Local commercial', category: 'commercial' },
+    { vn: 'Kho, nhà xưởng', en: 'Warehouse', fr: 'Entrepôt', category: 'commercial' },
+    // Terrain
+    { vn: 'Đất', en: 'Land', fr: 'Terrain', category: 'land' },
+    { vn: 'Đất nghỉ dưỡng', en: 'Resort Land', fr: 'Terrain Vacances', category: 'land' },
+    // Autre
+    { vn: 'Bất động sản khác', en: 'Other Property', fr: 'Autre Bien', category: 'other' },
   ];
 
   const availableSources = [
@@ -335,6 +372,19 @@ export default function SearchPage() {
       case 'priceDesc': return sorted.sort((a, b) => b.price - a.price);
       default: return sorted.sort((a, b) => b.score - a.score);
     }
+  };
+
+  // Group property types by category for better UX
+  const getPropertyTypesByCategory = () => {
+    const categories = {
+      all: propertyTypes.filter(pt => pt.category === 'all'),
+      apartment: propertyTypes.filter(pt => pt.category === 'apartment'),
+      house: propertyTypes.filter(pt => pt.category === 'house'),
+      commercial: propertyTypes.filter(pt => pt.category === 'commercial'),
+      land: propertyTypes.filter(pt => pt.category === 'land'),
+      other: propertyTypes.filter(pt => pt.category === 'other'),
+    };
+    return categories;
   };
 
   return (
@@ -460,7 +510,40 @@ export default function SearchPage() {
                 <label className="block text-sm font-bold text-gray-700 mb-2">{t.propertyType} <span className="text-orange-500">*</span></label>
                 <select value={searchParams.propertyType} onChange={(e) => setSearchParams({...searchParams, propertyType: e.target.value})} className="w-full px-4 py-2.5 border rounded-lg">
                   <option value="">{t.selectType}</option>
-                  {propertyTypes.map((pt, i) => <option key={i} value={pt.vn}>{pt[language]}</option>)}
+                  {/* All Properties */}
+                  {getPropertyTypesByCategory().all.map((pt, i) => (
+                    <option key={`all-${i}`} value={pt.vn}>📋 {pt[language]}</option>
+                  ))}
+                  {/* Apartments */}
+                  <optgroup label={t.catApartment}>
+                    {getPropertyTypesByCategory().apartment.map((pt, i) => (
+                      <option key={`apt-${i}`} value={pt.vn}>{pt[language]}</option>
+                    ))}
+                  </optgroup>
+                  {/* Houses */}
+                  <optgroup label={t.catHouse}>
+                    {getPropertyTypesByCategory().house.map((pt, i) => (
+                      <option key={`house-${i}`} value={pt.vn}>{pt[language]}</option>
+                    ))}
+                  </optgroup>
+                  {/* Commercial */}
+                  <optgroup label={t.catCommercial}>
+                    {getPropertyTypesByCategory().commercial.map((pt, i) => (
+                      <option key={`comm-${i}`} value={pt.vn}>{pt[language]}</option>
+                    ))}
+                  </optgroup>
+                  {/* Land */}
+                  <optgroup label={t.catLand}>
+                    {getPropertyTypesByCategory().land.map((pt, i) => (
+                      <option key={`land-${i}`} value={pt.vn}>{pt[language]}</option>
+                    ))}
+                  </optgroup>
+                  {/* Other */}
+                  <optgroup label={t.catOther}>
+                    {getPropertyTypesByCategory().other.map((pt, i) => (
+                      <option key={`other-${i}`} value={pt.vn}>{pt[language]}</option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
             </div>
@@ -824,39 +907,6 @@ export default function SearchPage() {
                       {selectedProperty.negotiationDetails.priceAnalysis.diffPercent > 0 && (
                         <span className="ml-auto font-bold">+{selectedProperty.negotiationDetails.priceAnalysis.diffPercent >= 20 ? 25 : selectedProperty.negotiationDetails.priceAnalysis.diffPercent >= 10 ? 20 : 10}</span>
                       )}
-                    </div>
-                  )}
-                  
-                  {/* CBRE Analysis - Source: CBRE Vietnam */}
-                  {selectedProperty.cbreAnalysis && selectedProperty.cbreAnalysis.percentDiff !== null && (
-                    <div className={`px-3 py-3 rounded-lg border-2 ${
-                      selectedProperty.cbreAnalysis.rating === 'excellent' ? 'bg-green-50 border-green-400' :
-                      selectedProperty.cbreAnalysis.rating === 'good' ? 'bg-emerald-50 border-emerald-300' :
-                      selectedProperty.cbreAnalysis.rating === 'fair' ? 'bg-blue-50 border-blue-300' :
-                      selectedProperty.cbreAnalysis.rating === 'above' ? 'bg-yellow-50 border-yellow-300' :
-                      'bg-red-50 border-red-300'
-                    }`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span>📊</span>
-                          <span className="font-bold">{t.cbreAnalysis}</span>
-                          <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded">{t.cbreSource}</span>
-                        </div>
-                        <span className={`font-bold ${
-                          selectedProperty.cbreAnalysis.percentDiff <= -10 ? 'text-green-600' :
-                          selectedProperty.cbreAnalysis.percentDiff <= 0 ? 'text-blue-600' :
-                          selectedProperty.cbreAnalysis.percentDiff <= 10 ? 'text-yellow-600' :
-                          'text-red-600'
-                        }`}>
-                          {selectedProperty.cbreAnalysis.percentDiff <= 0 ? '' : '+'}
-                          {selectedProperty.cbreAnalysis.percentDiff}% {selectedProperty.cbreAnalysis.percentDiff <= 0 ? t.belowMarket : t.aboveMarket}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600">{selectedProperty.cbreAnalysis.analysis}</p>
-                      <div className="mt-2 pt-2 border-t border-gray-200 text-xs text-gray-500">
-                        <p>📋 {t.cbreReference}: {selectedProperty.cbreAnalysis.referencePrice}M VND/m² | {selectedProperty.cbreAnalysis.referenceSource}</p>
-                        <p className="italic mt-1">{t.cbreDisclaimer}</p>
-                      </div>
                     </div>
                   )}
                   
