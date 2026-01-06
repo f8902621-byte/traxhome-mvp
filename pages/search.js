@@ -119,6 +119,18 @@ export default function SearchPage() {
       catCommercial: '🏪 Thương mại',
       catLand: '🌳 Đất',
       catOther: '📦 Khác',
+      // NLP Analysis
+    nlpAnalysisTitle: '🔍 Phân tích tự động',
+    nlpOpportunities: '✅ Cơ hội phát hiện',
+    nlpRisks: '⚠️ Rủi ro phát hiện',
+    nlpMetro: 'Gần Metro',
+    nlpNewRoad: 'Sắp mở đường',
+    nlpInvestment: 'Tiềm năng đầu tư',
+    nlpNoTitle: 'Chưa có sổ',
+    nlpPlanningRisk: 'Rủi ro quy hoạch',
+    nlpRentalIncome: '💰 Thu nhập cho thuê',
+    nlpGrossYield: 'Lợi suất',
+    nlpExtractedInfo: 'Thông tin trích xuất',
     },
     en: {
       menu: 'Menu', searchParams: 'Search Parameters', backToHome: 'Home',
@@ -175,6 +187,18 @@ export default function SearchPage() {
       catCommercial: '🏪 Commercial',
       catLand: '🌳 Land',
       catOther: '📦 Other',
+      // NLP Analysis
+    nlpAnalysisTitle: '🔍 Automatic text analysis',
+    nlpOpportunities: '✅ Opportunities detected',
+    nlpRisks: '⚠️ Risks detected',
+    nlpMetro: 'Near Metro',
+    nlpNewRoad: 'New road planned',
+    nlpInvestment: 'Investment potential',
+    nlpNoTitle: 'No land title',
+    nlpPlanningRisk: 'Planning risk',
+    nlpRentalIncome: '💰 Rental income mentioned',
+    nlpGrossYield: 'Gross yield',
+    nlpExtractedInfo: 'Extracted info',
     },
     fr: {
       menu: 'Menu', searchParams: 'Paramètres', backToHome: 'Accueil',
@@ -231,6 +255,18 @@ export default function SearchPage() {
       catCommercial: '🏪 Commercial',
       catLand: '🌳 Terrain',
       catOther: '📦 Autre',
+      // NLP Analysis
+    nlpAnalysisTitle: '🔍 Analyse automatique du texte',
+    nlpOpportunities: '✅ Opportunités détectées',
+    nlpRisks: '⚠️ Risques détectés',
+    nlpMetro: 'Proche Métro',
+    nlpNewRoad: 'Nouvelle route prévue',
+    nlpInvestment: 'Potentiel investissement',
+    nlpNoTitle: 'Pas de titre foncier',
+    nlpPlanningRisk: 'Risque urbanisme',
+    nlpRentalIncome: '💰 Revenu locatif mentionné',
+    nlpGrossYield: 'Rendement brut',
+    nlpExtractedInfo: 'Infos extraites',
     }
   }[language];
 
@@ -1014,69 +1050,75 @@ export default function SearchPage() {
                 </div>
               )}
               {/* Détections NLP - Opportunités & Risques */}
-              {(selectedProperty.detectedKeywords?.length > 0 || selectedProperty.hasMetroNearby || selectedProperty.hasNewRoad || selectedProperty.hasInvestmentPotential || selectedProperty.hasLegalIssue || selectedProperty.hasPlanningRisk || selectedProperty.extractedRentalIncome) && (
-                <div className="mt-4 p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border">
-                  <p className="text-sm font-bold text-gray-700 mb-3">🔍 Analyse automatique du texte</p>
-                  
-                  {/* Opportunités */}
-                  {(selectedProperty.hasMetroNearby || selectedProperty.hasNewRoad || selectedProperty.hasInvestmentPotential) && (
-                    <div className="mb-3">
-                      <p className="text-xs text-green-600 font-medium mb-2">✅ Opportunités détectées</p>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedProperty.hasMetroNearby && (
-                          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">🚇 Gần Metro</span>
-                        )}
-                        {selectedProperty.hasNewRoad && (
-                          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">🛣️ Sắp mở đường</span>
-                        )}
-                        {selectedProperty.hasInvestmentPotential && (
-                          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">📈 Tiềm năng đầu tư</span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Risques */}
-                  {(selectedProperty.hasLegalIssue || selectedProperty.hasPlanningRisk) && (
-                    <div className="mb-3">
-                      <p className="text-xs text-red-600 font-medium mb-2">⚠️ Risques détectés</p>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedProperty.hasLegalIssue && (
-                          <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium">⚠️ Chưa có sổ</span>
-                        )}
-                        {selectedProperty.hasPlanningRisk && (
-                          <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium">🚨 Rủi ro quy hoạch</span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Revenu locatif */}
-                  {selectedProperty.extractedRentalIncome && (
-                    <div className="mb-3 p-3 bg-blue-50 rounded-lg">
-                      <p className="text-xs text-blue-600 font-medium">💰 Revenu locatif mentionné</p>
-                      <p className="text-lg font-bold text-blue-700">{(selectedProperty.extractedRentalIncome / 1000000).toFixed(0)} triệu/tháng</p>
-                      {selectedProperty.price > 0 && (
-                        <p className="text-xs text-blue-500">
-                          Rendement brut: {((selectedProperty.extractedRentalIncome * 12 / selectedProperty.price) * 100).toFixed(1)}%/an
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* Autres mots-clés détectés */}
-                  {selectedProperty.detectedKeywords?.length > 0 && (
-                    <div>
-                      <p className="text-xs text-gray-500 mb-2">Mots-clés extraits:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {selectedProperty.detectedKeywords.map((kw, i) => (
-                          <span key={i} className="px-2 py-0.5 bg-slate-200 text-slate-600 rounded text-xs">{kw}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+{/* Détections NLP - Opportunités & Risques */}
+{(selectedProperty.detectedKeywords?.length > 0 || selectedProperty.hasMetroNearby || selectedProperty.hasNewRoad || selectedProperty.hasInvestmentPotential || selectedProperty.hasLegalIssue || selectedProperty.hasPlanningRisk) && (
+  <div className="mt-4 p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border">
+    <p className="text-sm font-bold text-gray-700 mb-3">🔍 {t.nlpAnalysisTitle || 'Analyse automatique du texte'}</p>
+    
+    {/* Opportunités */}
+    {(selectedProperty.hasMetroNearby || selectedProperty.hasNewRoad || selectedProperty.hasInvestmentPotential) && (
+      <div className="mb-3">
+        <p className="text-xs text-green-600 font-medium mb-2">✅ {t.nlpOpportunities || 'Opportunités détectées'}</p>
+        <div className="flex flex-wrap gap-2">
+          {selectedProperty.hasMetroNearby && (
+            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">🚇 {t.nlpMetro || 'Gần Metro'}</span>
+          )}
+          {selectedProperty.hasNewRoad && (
+            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">🛣️ {t.nlpNewRoad || 'Sắp mở đường'}</span>
+          )}
+          {selectedProperty.hasInvestmentPotential && (
+            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">📈 {t.nlpInvestment || 'Tiềm năng đầu tư'}</span>
+          )}
+        </div>
+      </div>
+    )}
+    
+    {/* Risques */}
+    {(selectedProperty.hasLegalIssue || selectedProperty.hasPlanningRisk) && (
+      <div className="mb-3">
+        <p className="text-xs text-red-600 font-medium mb-2">⚠️ {t.nlpRisks || 'Risques détectés'}</p>
+        <div className="flex flex-wrap gap-2">
+          {selectedProperty.hasLegalIssue && (
+            <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium">⚠️ {t.nlpNoTitle || 'Chưa có sổ'}</span>
+          )}
+          {selectedProperty.hasPlanningRisk && (
+            <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium">🚨 {t.nlpPlanningRisk || 'Rủi ro quy hoạch'}</span>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* Revenu locatif */}
+    {selectedProperty.extractedRentalIncome && (
+      <div className="mb-3 p-3 bg-blue-50 rounded-lg">
+        <p className="text-xs text-blue-600 font-medium">💰 {t.nlpRentalIncome || 'Revenu locatif mentionné'}</p>
+        <p className="text-lg font-bold text-blue-700">{(selectedProperty.extractedRentalIncome / 1000000).toFixed(0)} triệu/tháng</p>
+        {selectedProperty.price > 0 && (
+          <p className="text-xs text-blue-500">
+            {t.nlpGrossYield || 'Rendement brut'}: {((selectedProperty.extractedRentalIncome * 12 / selectedProperty.price) * 100).toFixed(1)}%/an
+          </p>
+        )}
+      </div>
+    )}
+
+    {/* Mots-clés physiques uniquement (sans doublons opportunités/risques) */}
+    {selectedProperty.detectedKeywords?.filter(kw => 
+      !kw.includes('Metro') && !kw.includes('đường') && !kw.includes('đầu tư') && 
+      !kw.includes('sổ') && !kw.includes('quy hoạch')
+    ).length > 0 && (
+      <div>
+        <p className="text-xs text-gray-500 mb-2">{t.nlpExtractedInfo || 'Infos extraites'}:</p>
+        <div className="flex flex-wrap gap-1">
+          {selectedProperty.detectedKeywords
+            .filter(kw => !kw.includes('Metro') && !kw.includes('đường') && !kw.includes('đầu tư') && !kw.includes('sổ') && !kw.includes('quy hoạch'))
+            .map((kw, i) => (
+              <span key={i} className="px-2 py-0.5 bg-slate-200 text-slate-600 rounded text-xs">{kw}</span>
+            ))}
+        </div>
+      </div>
+    )}
+  </div>
+)}
               {/* Address */}
               {(selectedProperty.address || selectedProperty.district) && (
                 <div 
