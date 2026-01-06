@@ -61,6 +61,148 @@ const getFurnishing = (code) => {
   return furnishingMap[code] || null;
 };
 // ============================================
+// ANALYSE NLP DU TEXTE DES ANNONCES
+// ============================================
+function analyzeListingText(title, body) {
+  const text = ((title || '') + ' ' + (body || '')).toLowerCase();
+  const analysis = {
+    // Infos physiques extraites
+    extractedStreetWidth: null,
+    extractedFloors: null,
+    extractedFacade: null,
+    extractedDirection: null,
+    // Infos financières
+    extractedRentalIncome: null,
+    extractedPricePerM2: null,
+    // Opportunités
+    hasMetroNearby: false,
+    hasNewRoad: false,
+    hasInvestmentPotential: false,
+    // Risques
+    hasLegalIssue: false,
+    hasPlanningRisk: false,
+    // Mots-clés trouvés
+    detectedKeywords: []
+  };
+
+  // === LARGEUR DE RUE / HẺM ===
+  const streetPatterns = [
+    /hẻm\s*(\d+[,.]?\d*)\s*m/i,
+    /ngõ\s*(\d+[,.]?\d*)\s*m/i,
+    /đường[^\d]*(\d+[,.]?\d*)\s*m/i,
+    /rộng\s*(\d+[,.]?\d*)\s*m(?!\s*²)/i,
+    /(\d+[,.]?\d*)\s*m\s*(hẻm|ngõ)/i,
+  ];
+  for (const pattern of streetPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      analysis.extractedStreetWidth = parseFloat(match[1].replace(',', '.'));
+      analysis.detectedKeywords.push(`Hẻm ${analysis.extractedStreetWidth}m`);
+      break;
+    }
+  }
+
+  // === NOMBRE D'ÉTAGES ===
+  const floorPatterns = [
+    /(\d+)\s*tầng/i,
+    /(\d+)\s*lầu/i,
+    /nhà\s*(\d+)\s*t(?:ầng|ang)/i,
+  ];
+  for (const pattern of floorPatterns) {
+    const match = text.match(pattern);
+    if (match && parseInt(match[1]) <= 20) {
+      analysis.extractedFloors = parseInt(match[1]);
+      analysis.detectedKeywords.push(`${analysis.extractedFloors} tầng`);
+      break;
+    }
+  }
+
+  // === LARGEUR FAÇADE ===
+  const facadePatterns = [
+    /mặt\s*tiền[^\d]*(\d+[,.]?\d*)\s*m/i,
+    /ngang[^\d]*(\d+[,.]?\d*)\s*m/i,
+    /(\d+[,.]?\d*)\s*m\s*x\s*\d+/i,
+  ];
+  for (const pattern of facadePatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      analysis.extractedFacade = parseFloat(match[1].replace(',', '.'));
+      analysis.detectedKeywords.push(`MT ${analysis.extractedFacade}m`);
+      break;
+    }
+  }
+
+  // === DIRECTION ===
+  const directionPatterns = [
+    /hướng\s*(đông\s*nam|tây\s*nam|đông\s*bắc|tây\s*bắc|đông|tây|nam|bắc)/i,
+    /(đông\s*nam|tây\s*nam|đông\s*bắc|tây\s*bắc)\s*$/i,
+  ];
+  for (const pattern of directionPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      analysis.extractedDirection = match[1].charAt(0).toUpperCase() + match[1].slice(1);
+      analysis.detectedKeywords.push(`Hướng ${analysis.extractedDirection}`);
+      break;
+    }
+  }
+
+  // === REVENU LOCATIF ===
+  const rentalPatterns = [
+    /thu\s*nhập[^\d]*(\d+)[^\d]*(tr|triệu)/i,
+    /cho\s*thuê[^\d]*(\d+)[^\d]*(tr|triệu)/i,
+    /thuê[^\d]*(\d+)[^\d]*(tr|triệu)[^\d]*tháng/i,
+  ];
+  for (const pattern of rentalPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      analysis.extractedRentalIncome = parseInt(match[1]) * 1000000;
+      analysis.detectedKeywords.push(`Thu nhập ${match[1]}tr/tháng`);
+      break;
+    }
+  }
+
+  // === PRIX AU M² MENTIONNÉ ===
+  const priceM2Patterns = [
+    /(\d+)[^\d]*(tr|triệu)[^\d]*m²/i,
+    /giá[^\d]*(\d+)[^\d]*(tr|triệu)\/m/i,
+  ];
+  for (const pattern of priceM2Patterns) {
+    const match = text.match(pattern);
+    if (match) {
+      analysis.extractedPricePerM2 = parseInt(match[1]) * 1000000;
+      analysis.detectedKeywords.push(`${match[1]}tr/m²`);
+      break;
+    }
+  }
+
+  // === OPPORTUNITÉS ===
+  if (/metro|tàu\s*điện/i.test(text)) {
+    analysis.hasMetroNearby = true;
+    analysis.detectedKeywords.push('🚇 Gần Metro');
+  }
+  if (/mở\s*đường|sắp\s*mở|đường\s*mới|quy\s*hoạch\s*đường/i.test(text)) {
+    analysis.hasNewRoad = true;
+    analysis.detectedKeywords.push('🛣️ Sắp mở đường');
+  }
+  if (/đầu\s*tư|sinh\s*lời|tăng\s*giá|tiềm\s*năng/i.test(text)) {
+    analysis.hasInvestmentPotential = true;
+    analysis.detectedKeywords.push('📈 Tiềm năng đầu tư');
+  }
+
+  // === RISQUES ===
+  if (/chưa\s*(có\s*)?sổ|giấy\s*tay|không\s*sổ/i.test(text)) {
+    analysis.hasLegalIssue = true;
+    analysis.detectedKeywords.push('⚠️ Chưa có sổ');
+  }
+  if (/giải\s*tỏa|quy\s*hoạch\s*(treo|đỏ)|tranh\s*chấp/i.test(text)) {
+    analysis.hasPlanningRisk = true;
+    analysis.detectedKeywords.push('🚨 Rủi ro quy hoạch');
+  }
+
+  return analysis;
+}
+
+// ============================================
 // MAPPING UNIVERSEL DES TYPES DE BIENS K TRIX
 // ============================================
 const PROPERTY_TYPE_MAPPING = {
@@ -339,35 +481,51 @@ async function fetchChotot(params) {
   // Mapper les résultats
   let results = allAds
     .filter(ad => ad.price && ad.price > 0)
-    .map(ad => ({
-      id: `chotot_${ad.list_id}`,
-      title: ad.subject || 'Không có tiêu đề',
-      price: ad.price || 0,
-      floorAreaSqm: ad.size || ad.area || 0,
-      area: ad.size || ad.area || 0,
-      address: [ad.street_name, ad.ward_name, ad.area_name].filter(Boolean).join(', ') || '',
-      street: ad.street_name || '',
-      ward: ad.ward_name || '',
-      district: ad.area_name || '',
-      city: ad.region_name || '',
-      bedrooms: ad.rooms || null,
-      bathrooms: ad.toilets || null,
-      thumbnail: ad.image || ad.images?.[0] || '',
-      images: ad.images || (ad.image ? [ad.image] : []),
-      url: `https://www.chotot.com/${ad.list_id}.htm`,
-      source: 'chotot.com',
-      postedOn: ad.list_time ? new Date(ad.list_time * 1000).toLocaleDateString('vi-VN') : '',
-      list_time: ad.list_time || 0,
-      category: ad.category || null,
-      propertyType: ad.category_name || '',
-      pricePerM2: ad.price_million_per_m2 || null,
-      legalStatus: ad.property_legal_document ? getLegalStatus(ad.property_legal_document) : null,
-      direction: ad.direction ? getDirection(ad.direction) : null,
-      floors: ad.floors || null,
-      streetWidth: ad.street_width || null,
-      facadeWidth: ad.facade_width || null,
-      furnishing: ad.furnishing_sell ? getFurnishing(ad.furnishing_sell) : null,
-    }));
+    .map(ad => {
+      // Analyse NLP du texte de l'annonce
+      const nlpAnalysis = analyzeListingText(ad.subject, ad.body);
+      
+      return {
+        id: `chotot_${ad.list_id}`,
+        title: ad.subject || 'Không có tiêu đề',
+        body: ad.body || '',
+        price: ad.price || 0,
+        floorAreaSqm: ad.size || ad.area || 0,
+        area: ad.size || ad.area || 0,
+        address: [ad.street_name, ad.ward_name, ad.area_name].filter(Boolean).join(', ') || '',
+        street: ad.street_name || '',
+        ward: ad.ward_name || '',
+        district: ad.area_name || '',
+        city: ad.region_name || '',
+        bedrooms: ad.rooms || null,
+        bathrooms: ad.toilets || null,
+        thumbnail: ad.image || ad.images?.[0] || '',
+        images: ad.images || (ad.image ? [ad.image] : []),
+        url: `https://www.chotot.com/${ad.list_id}.htm`,
+        source: 'chotot.com',
+        postedOn: ad.list_time ? new Date(ad.list_time * 1000).toLocaleDateString('vi-VN') : '',
+        list_time: ad.list_time || 0,
+        category: ad.category || null,
+        propertyType: ad.category_name || '',
+        pricePerM2: ad.price_million_per_m2 || null,
+        legalStatus: ad.property_legal_document ? getLegalStatus(ad.property_legal_document) : null,
+        // Données API Chotot (si disponibles)
+        direction: ad.direction ? getDirection(ad.direction) : nlpAnalysis.extractedDirection,
+        floors: ad.floors || nlpAnalysis.extractedFloors,
+        streetWidth: ad.street_width || nlpAnalysis.extractedStreetWidth,
+        facadeWidth: ad.facade_width || nlpAnalysis.extractedFacade,
+        furnishing: ad.furnishing_sell ? getFurnishing(ad.furnishing_sell) : null,
+        // Données extraites par NLP
+        nlpAnalysis: nlpAnalysis,
+        extractedRentalIncome: nlpAnalysis.extractedRentalIncome,
+        hasMetroNearby: nlpAnalysis.hasMetroNearby,
+        hasNewRoad: nlpAnalysis.hasNewRoad,
+        hasInvestmentPotential: nlpAnalysis.hasInvestmentPotential,
+        hasLegalIssue: nlpAnalysis.hasLegalIssue,
+        hasPlanningRisk: nlpAnalysis.hasPlanningRisk,
+        detectedKeywords: nlpAnalysis.detectedKeywords,
+      };
+    });
   
   // Appliquer le filtrage par mots-clés INCLURE/EXCLURE
   if (typeMapping.include.length > 0 || typeMapping.exclude.length > 0) {
@@ -903,6 +1061,14 @@ exports.handler = async (event) => {
         streetWidth: item.streetWidth || null,
         facadeWidth: item.facadeWidth || null,
         furnishing: item.furnishing || null,
+        // Données NLP extraites
+        extractedRentalIncome: item.extractedRentalIncome || null,
+        hasMetroNearby: item.hasMetroNearby || false,
+        hasNewRoad: item.hasNewRoad || false,
+        hasInvestmentPotential: item.hasInvestmentPotential || false,
+        hasLegalIssue: item.hasLegalIssue || false,
+        hasPlanningRisk: item.hasPlanningRisk || false,
+        detectedKeywords: item.detectedKeywords || [],
       };
     });
 
