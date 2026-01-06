@@ -342,17 +342,7 @@ async function fetchChotot(params) {
     results = filterByKeywords(results, typeMapping.include, typeMapping.exclude);
     console.log(`Chotot filtre mots-clés: ${beforeFilter} → ${results.length}`);
   }
-  // Filtrer par statut légal
-  if (legalStatus) {
-    const beforeLegal = results.length;
-    results = results.filter(r => {
-      if (legalStatus === 'sohong') return r.legalStatus === 'Sổ đỏ/Sổ hồng';
-      if (legalStatus === 'hopdong') return r.legalStatus === 'Hợp đồng mua bán';
-      if (legalStatus === 'dangcho') return r.legalStatus === 'Đang chờ sổ';
-      return true;
-    });
-    console.log(`Filtre légal ${legalStatus}: ${beforeLegal} → ${results.length}`);
-  }
+
   
   return results;
 }
@@ -737,7 +727,7 @@ exports.handler = async (event) => {
   let body = {};
   try { body = JSON.parse(event.body || '{}'); } catch (e) { body = {}; }
 
-  const { city, district, propertyType, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, sources, sortBy, keywords, keywordsOnly } = body;
+  const { city, district, propertyType, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, sources, sortBy, keywords, keywordsOnly, legalStatus } = body;
 
   console.log('=== NOUVELLE RECHERCHE ===');
   console.log('Params:', JSON.stringify({ city, propertyType, priceMin, priceMax, sortBy, sources }));
@@ -779,7 +769,7 @@ exports.handler = async (event) => {
       
       if (isHCM) {
         const nhadat247Results = await fetchNhadat247(propertyType);
-        const filtered = applyFilters(nhadat247Results, { city, district, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms });
+        const filtered = applyFilters(nhadat247Results, { city, district, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, legalStatus });
         console.log(`Nhadat247 (HCM): ${nhadat247Results.length} → ${filtered.length} après filtres`);
         allResults.push(...filtered);
       } else {
