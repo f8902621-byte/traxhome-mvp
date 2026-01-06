@@ -17,6 +17,8 @@ const CHOTOT_REGIONS = {
   'ba ria': '2010',
   'vung tau': '2010',
   'ba ria vung tau': '2010',
+  'quy nhon': '7043',
+'binh dinh': '7043',
 };
 
 // ============================================
