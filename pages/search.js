@@ -288,6 +288,7 @@ export default function SearchPage() {
     { vn: 'Cần Thơ', en: 'Can Tho', fr: 'Can Tho' },
     { vn: 'Hải Phòng', en: 'Hai Phong', fr: 'Hai Phong' },
     { vn: 'Bà Rịa - Vũng Tàu', en: 'Ba Ria - Vung Tau', fr: 'Ba Ria - Vung Tau' },
+    { vn: 'Bình Định', en: 'Binh Dinh (Quy Nhon)', fr: 'Binh Dinh (Quy Nhon)' },
   ];
 
   const districtsByCity = {
@@ -299,6 +300,7 @@ export default function SearchPage() {
     'Cần Thơ': ['Ninh Kiều', 'Bình Thủy', 'Cái Răng'],
     'Hải Phòng': ['Hồng Bàng', 'Lê Chân', 'Ngô Quyền', 'Đồ Sơn'],
     'Bà Rịa - Vũng Tàu': ['Vũng Tàu', 'Bà Rịa', 'Long Điền', 'Phú Mỹ'],
+    'Bình Định': ['Quy Nhơn', 'An Nhơn', 'Hoài Nhơn', 'Tuy Phước', 'Phù Cát'],
   };
 
   const currentDistricts = districtsByCity[searchParams.city] || [];
