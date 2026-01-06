@@ -509,7 +509,7 @@ async function fetchBatdongsan(propertyType) {
 // FILTRES POST-API
 // ============================================
 function applyFilters(results, filters) {
-  const { city, district, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, legalStatus } = filters;
+  const { city, district, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, legalStatus, streetWidthMin } = filters;
   let filtered = [...results];
   
   if (priceMin) {
@@ -553,7 +553,13 @@ function applyFilters(results, filters) {
       return true;
     });
   }
-  
+    // Filtre par largeur de rue minimum
+  if (streetWidthMin) {
+    filtered = filtered.filter(item => {
+      if (!item.streetWidth) return false; // Exclure si pas d'info
+      return item.streetWidth >= parseFloat(streetWidthMin);
+    });
+  }
   return filtered;
 }
 
