@@ -896,7 +896,22 @@ export default function SearchPage() {
                       <span className="ml-auto font-bold">+25</span>
                     </div>
                   )}
-                  
+                  {selectedProperty.legalStatus && (
+                  <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                    selectedProperty.legalStatus === 'Sổ đỏ/Sổ hồng' ? 'bg-green-100 text-green-700' :
+                    selectedProperty.legalStatus === 'Hợp đồng mua bán' ? 'bg-blue-100 text-blue-700' :
+                    selectedProperty.legalStatus === 'Đang chờ sổ' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-slate-100 text-slate-700'
+                  }`}>
+                    <span>📋</span>
+                    <span className="font-medium">{selectedProperty.legalStatus}</span>
+                    <span className="ml-auto font-bold">
+                      {selectedProperty.legalStatus === 'Sổ đỏ/Sổ hồng' ? '+15' :
+                       selectedProperty.legalStatus === 'Hợp đồng mua bán' ? '+8' :
+                       selectedProperty.legalStatus === 'Đang chờ sổ' ? '+3' : ''}
+                    </span>
+                  </div>
+                )}
                   {selectedProperty.negotiationDetails?.priceAnalysis && (
                     <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
                       selectedProperty.negotiationDetails.priceAnalysis.diffPercent > 0 
