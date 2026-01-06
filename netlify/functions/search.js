@@ -893,7 +893,66 @@ function calculateNegotiationScore(item, avgPricePerM2) {
   } else {
     details.legalStatus = { status: null, verdict: 'unknown' };
   }
-  const finalScore = Math.min(100, score);
+  // ============================================
+  // 7. BONUS/MALUS NLP (infrastructure & risques)
+  // ============================================
+  details.nlpFactors = [];
+  
+  // BONUS : Proximité Metro (+10 points)
+  if (item.hasMetroNearby) {
+    score += 10;
+    details.nlpFactors.push({ 
+      type: 'bonus', 
+      label: '🚇 Gần Metro', 
+      points: 10,
+      reason: 'Infrastructure transport = plus-value'
+    });
+  }
+  
+  // BONUS : Nouvelle route prévue (+8 points)
+  if (item.hasNewRoad) {
+    score += 8;
+    details.nlpFactors.push({ 
+      type: 'bonus', 
+      label: '🛣️ Sắp mở đường', 
+      points: 8,
+      reason: 'Potentiel d\'appréciation'
+    });
+  }
+  
+  // BONUS : Potentiel investissement (+5 points)
+  if (item.hasInvestmentPotential) {
+    score += 5;
+    details.nlpFactors.push({ 
+      type: 'bonus', 
+      label: '📈 Tiềm năng đầu tư', 
+      points: 5,
+      reason: 'Mots-clés investissement détectés'
+    });
+  }
+  
+  // MALUS : Problème légal (-15 points)
+  if (item.hasLegalIssue) {
+    score -= 15;
+    details.nlpFactors.push({ 
+      type: 'malus', 
+      label: '⚠️ Chưa có sổ', 
+      points: -15,
+      reason: 'Risque légal majeur'
+    });
+  }
+  
+  // MALUS : Risque quy hoạch (-15 points)
+  if (item.hasPlanningRisk) {
+    score -= 15;
+    details.nlpFactors.push({ 
+      type: 'malus', 
+      label: '🚨 Rủi ro quy hoạch', 
+      points: -15,
+      reason: 'Risque giải tỏa/quy hoạch'
+    });
+  }
+  const finalScore = Math.min(100, Math.max(0, score)); // Score entre 0 et 100
   
   let negotiationLevel;
   if (finalScore >= 70) {
