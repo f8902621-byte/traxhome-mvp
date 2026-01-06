@@ -843,6 +843,7 @@ exports.handler = async (event) => {
         isNew: /hôm nay|phút|today/i.test(item.postedOn || ''),
         postedOn: item.postedOn || '',
         daysOnline: negotiation.details.listingAge?.days || 0,
+        legalStatus: item.legalStatus || null,
       };
     });
 
