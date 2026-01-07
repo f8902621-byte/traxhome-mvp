@@ -12,89 +12,35 @@ async function saveListingsToSupabase(listings) {
     return [];
   }
   
-  const priceChanges = [];
-  
   try {
     const today = new Date().toISOString().split('T')[0];
     
-    // 1. Récupérer les annonces existantes pour comparer les prix
-    const ids = listings.map(item => item.id);
-    const existingResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/listings?id=in.(${ids.map(id => `"${id}"`).join(',')})&select=id,price,title`,
-      {
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        }
-      }
-    );
+    const records = listings.map(item => ({
+      id: item.id,
+      source: item.source || 'unknown',
+      title: item.title || '',
+      price: item.price || 0,
+      area: item.floorArea || item.area || 0,
+      price_per_m2: item.pricePerSqm || 0,
+      district: item.district || '',
+      ward: item.ward || '',
+      city: item.city || '',
+      property_type: item.propertyType || '',
+      bedrooms: item.bedrooms || null,
+      bathrooms: item.bathrooms || null,
+      floors: item.floors || null,
+      street_width: item.streetWidth || null,
+      facade_width: item.facadeWidth || null,
+      legal_status: item.legalStatus || null,
+      direction: item.direction || null,
+      furnishing: item.furnishing || null,
+      url: item.url || '',
+      thumbnail: item.imageUrl || '',
+      last_seen: today,
+      negotiation_score: item.score || 0,
+      updated_at: new Date().toISOString()
+    }));
     
-    const existingListings = existingResponse.ok ? await existingResponse.json() : [];
-    const existingMap = new Map(existingListings.map(item => [item.id, item]));
-    
-    // 2. Préparer les données et détecter les changements de prix
-    const records = [];
-    const priceHistoryRecords = [];
-    
-    for (const item of listings) {
-      const existing = existingMap.get(item.id);
-      const newPrice = item.price || 0;
-      
-      // Détecter baisse de prix
-      if (existing && existing.price && newPrice > 0) {
-        const oldPrice = existing.price;
-        const priceDiff = oldPrice - newPrice;
-        const priceDiffPercent = Math.round((priceDiff / oldPrice) * 100);
-        
-        if (priceDiff > 0 && priceDiffPercent >= 2) {
-          // Prix a baissé d'au moins 2%
-          priceChanges.push({
-            id: item.id,
-            title: item.title,
-            oldPrice: oldPrice,
-            newPrice: newPrice,
-            priceDiff: priceDiff,
-            priceDiffPercent: priceDiffPercent,
-          });
-          
-          // Enregistrer dans l'historique
-          priceHistoryRecords.push({
-            listing_id: item.id,
-            price: newPrice,
-            recorded_at: today,
-          });
-        }
-      }
-      
-      // Préparer l'enregistrement
-      records.push({
-        id: item.id,
-        source: item.source || 'unknown',
-        title: item.title || '',
-        price: newPrice,
-        area: item.floorArea || item.area || 0,
-        price_per_m2: item.pricePerSqm || 0,
-        district: item.district || '',
-        ward: item.ward || '',
-        city: item.city || '',
-        property_type: item.propertyType || '',
-        bedrooms: item.bedrooms || null,
-        bathrooms: item.bathrooms || null,
-        floors: item.floors || null,
-        street_width: item.streetWidth || null,
-        facade_width: item.facadeWidth || null,
-        legal_status: item.legalStatus || null,
-        direction: item.direction || null,
-        furnishing: item.furnishing || null,
-        url: item.url || '',
-        thumbnail: item.imageUrl || '',
-        last_seen: today,
-        negotiation_score: item.score || 0,
-        updated_at: new Date().toISOString()
-      });
-    }
-    
-    // 3. Upsert les annonces
     const response = await fetch(`${SUPABASE_URL}/rest/v1/listings`, {
       method: 'POST',
       headers: {
@@ -113,32 +59,7 @@ async function saveListingsToSupabase(listings) {
       console.error('Supabase error:', error);
     }
     
-    // 4. Enregistrer l'historique des prix si changements
-    if (priceHistoryRecords.length > 0) {
-      const historyResponse = await fetch(`${SUPABASE_URL}/rest/v1/price_history`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify(priceHistoryRecords)
-      });
-      
-      if (historyResponse.ok) {
-        console.log(`Supabase: ${priceHistoryRecords.length} changements de prix enregistrés`);
-      }
-    }
-    
-    if (priceChanges.length > 0) {
-      console.log(`🔻 ${priceChanges.length} BAISSES DE PRIX DÉTECTÉES !`);
-      priceChanges.forEach(pc => {
-        console.log(`  - ${pc.title.substring(0, 40)}... : ${pc.oldPrice/1000000000} tỷ → ${pc.newPrice/1000000000} tỷ (-${pc.priceDiffPercent}%)`);
-      });
-    }
-    
-    return priceChanges;
-    
+    return [];
   } catch (error) {
     console.error('Supabase save error:', error.message);
     return [];
