@@ -107,17 +107,22 @@ function analyzeListingText(title, body) {
   
   let streetWidthFound = false;
   
-  // 1. Chercher d'abord dans le BODY (description) - plus fiable
-  for (const pattern of streetWidthPatterns) {
-    const match = bodyText.match(pattern);
-    if (match) {
-      const width = parseFloat(match[1].replace(',', '.'));
-      // Validation: largeur plausible entre 1m et 15m
-      if (width >= 1 && width <= 15) {
-        analysis.extractedStreetWidth = width;
-        analysis.detectedKeywords.push(`Hẻm ${width}m`);
-        streetWidthFound = true;
-        break;
+// 1. Chercher d'abord dans le BODY (description) - plus fiable
+  // Mais exclure si le contexte est "X MT" ou "X mặt tiền"
+  const hasMTContextBody = /\d\s*mt\b|\d\s*mặt\s*tiền/i.test(bodyText);
+  
+  if (!hasMTContextBody) {
+    for (const pattern of streetWidthPatterns) {
+      const match = bodyText.match(pattern);
+      if (match) {
+        const width = parseFloat(match[1].replace(',', '.'));
+        // Validation: largeur plausible entre 1m et 15m
+        if (width >= 1 && width <= 15) {
+          analysis.extractedStreetWidth = width;
+          analysis.detectedKeywords.push(`Hẻm ${width}m`);
+          streetWidthFound = true;
+          break;
+        }
       }
     }
   }
