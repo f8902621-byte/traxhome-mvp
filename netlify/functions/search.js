@@ -158,18 +158,27 @@ function analyzeListingText(title, body) {
     }
   }
 
-  // === LARGEUR FAÇADE ===
+// === LARGEUR FAÇADE ===
+  // Patterns améliorés pour éviter confusion avec surface (m²/m2)
   const facadePatterns = [
-    /mặt\s*tiền[^\d]*(\d+[,.]?\d*)\s*m/i,
-    /ngang[^\d]*(\d+[,.]?\d*)\s*m/i,
+    // "mặt tiền 5m", "MT 4m" - mais PAS "100m2" ou "100m²"
+    /mặt\s*tiền\s+(\d+[,.]?\d*)\s*m(?!\s*²|²|2|\d)/i,
+    // "ngang 4m", "ngang 5,5m"
+    /ngang\s+(\d+[,.]?\d*)\s*m(?!\s*²|²|2|\d)/i,
+    // "4m x 15m" (dimensions) - prend le premier nombre comme façade
     /(\d+[,.]?\d*)\s*m\s*x\s*\d+/i,
   ];
+  
   for (const pattern of facadePatterns) {
     const match = text.match(pattern);
     if (match) {
-      analysis.extractedFacade = parseFloat(match[1].replace(',', '.'));
-      analysis.detectedKeywords.push(`MT ${analysis.extractedFacade}m`);
-      break;
+      const facade = parseFloat(match[1].replace(',', '.'));
+      // Validation: une façade fait entre 2m et 30m max
+      if (facade >= 2 && facade <= 30) {
+        analysis.extractedFacade = facade;
+        analysis.detectedKeywords.push(`MT ${facade}m`);
+        break;
+      }
     }
   }
 
