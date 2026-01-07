@@ -801,8 +801,6 @@ function applyFilters(results, filters) {
   
   if (district) {
     const d = removeVietnameseAccents(district.toLowerCase());
-    const districtMatch = d.match(/quan\s*(\d+)/);
-    const districtNum = districtMatch ? districtMatch[1] : null;
     
     filtered = filtered.filter(item => {
       const itemDistrict = removeVietnameseAccents((item.district || '').toLowerCase());
@@ -810,33 +808,12 @@ function applyFilters(results, filters) {
       const itemAddress = removeVietnameseAccents((item.address || '').toLowerCase());
       const combined = itemDistrict + ' ' + itemTitle + ' ' + itemAddress;
       
-      if (combined.includes(d)) return true;
-      
-      if (districtNum) {
-        const patterns = [
-          `quan ${districtNum}`,
-          `q${districtNum}`,
-          `quan${districtNum}`,
-          if (district) {
-    const d = removeVietnameseAccents(district.toLowerCase());
-    
-    filtered = filtered.filter(item => {
-      const itemDistrict = removeVietnameseAccents((item.district || '').toLowerCase());
-      const itemTitle = removeVietnameseAccents((item.title || '').toLowerCase());
-      const itemAddress = removeVietnameseAccents((item.address || '').toLowerCase());
-      const combined = itemDistrict + ' ' + itemTitle + ' ' + itemAddress;
-      
-      // Log pour debug
-      console.log(`District filter: looking for "${d}" in "${combined.substring(0, 100)}..."`);
-      
-      // Chercher "quan 2" ou "q2" ou "(quan 2"
+      // Chercher le district dans le texte combiné
       if (combined.includes(d)) return true;
       if (combined.includes('quan 2') || combined.includes('q2') || combined.includes('(quan 2')) return true;
       
       return false;
     });
-    
-    console.log(`District filter: ${filtered.length} résultats après filtre`);
   }
   
   if (livingAreaMin) {
