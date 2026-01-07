@@ -1,5 +1,71 @@
 const APIFY_API_TOKEN = process.env.APIFY_API_TOKEN;
 const APIFY_ACTOR_ID = process.env.APIFY_ACTOR_ID;
+const APIFY_API_TOKEN = process.env.APIFY_API_TOKEN;
+const APIFY_ACTOR_ID = process.env.APIFY_ACTOR_ID;
+
+// ============================================
+// SUPABASE - STOCKAGE DES ANNONCES
+// ============================================
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+
+async function saveListingsToSupabase(listings) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || listings.length === 0) {
+    return;
+  }
+  
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Préparer les données pour Supabase
+    const records = listings.map(item => ({
+      id: item.id,
+      source: item.source || 'unknown',
+      title: item.title || '',
+      price: item.price || 0,
+      area: item.floorArea || item.area || 0,
+      price_per_m2: item.pricePerSqm || 0,
+      district: item.district || '',
+      ward: item.ward || '',
+      city: item.city || '',
+      property_type: item.propertyType || '',
+      bedrooms: item.bedrooms || null,
+      bathrooms: item.bathrooms || null,
+      floors: item.floors || null,
+      street_width: item.streetWidth || null,
+      facade_width: item.facadeWidth || null,
+      legal_status: item.legalStatus || null,
+      direction: item.direction || null,
+      furnishing: item.furnishing || null,
+      url: item.url || '',
+      thumbnail: item.imageUrl || '',
+      last_seen: today,
+      negotiation_score: item.score || 0,
+      updated_at: new Date().toISOString()
+    }));
+    
+    // Upsert (insert ou update si existe déjà)
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/listings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify(records)
+    });
+    
+    if (response.ok) {
+      console.log(`Supabase: ${records.length} annonces sauvegardées`);
+    } else {
+      const error = await response.text();
+      console.error('Supabase error:', error);
+    }
+  } catch (error) {
+    console.error('Supabase save error:', error.message);
+  }
+}
 
 // ============================================
 // MAPPING DES VILLES → CODE RÉGION CHOTOT
@@ -1305,7 +1371,8 @@ exports.handler = async (event) => {
     };
 
     console.log(`FINAL: ${results.length} résultats affichés, ${unique.length} disponibles, prix moyen/m²: ${Math.round(avgPricePerM2/1000000)}M`);
-
+// Sauvegarder les annonces dans Supabase (en arrière-plan)
+    saveListingsToSupabase(results).catch(err => console.error('Supabase async error:', err));
     return {
       statusCode: 200,
       headers,
