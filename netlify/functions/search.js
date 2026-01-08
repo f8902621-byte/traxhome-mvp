@@ -606,7 +606,7 @@ async function fetchChotot(params) {
     .map(ad => {
       // Analyse NLP du texte de l'annonce
       const nlpAnalysis = analyzeListingText(ad.subject, ad.body);
-      
+      const propertyType = getCategoryName(ad.category) || ad.category_name || '';
       return {
         id: `chotot_${ad.list_id}`,
         title: ad.subject || 'Không có tiêu đề',
