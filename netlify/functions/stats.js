@@ -21,15 +21,20 @@ exports.handler = async (event) => {
   }
 
   try {
-    // Paramètres optionnels
+    // Paramètres
     const params = event.queryStringParameters || {};
     const city = params.city || '';
+    const propertyType = params.propertyType || '';
 
     // 1. Récupérer toutes les annonces de la base
-    let url = `${SUPABASE_URL}/rest/v1/listings?select=district,city,price,area,price_per_m2,first_seen,last_seen&price=gt.0&area=gt.0`;
+    let url = `${SUPABASE_URL}/rest/v1/listings?select=district,city,price,area,price_per_m2,property_type,first_seen,last_seen&price=gt.0&area=gt.0`;
     
     if (city) {
       url += `&city=ilike.*${encodeURIComponent(city)}*`;
+    }
+    
+    if (propertyType) {
+      url += `&property_type=ilike.*${encodeURIComponent(propertyType)}*`;
     }
 
     const response = await fetch(url, {
@@ -44,9 +49,20 @@ exports.handler = async (event) => {
     }
 
     const listings = await response.json();
-    console.log(`Stats: ${listings.length} annonces récupérées`);
+    console.log(`Stats: ${listings.length} annonces récupérées (ville: ${city || 'toutes'}, type: ${propertyType || 'tous'})`);
 
-    // 2. Calculer les stats par district
+    // 2. Compter le total d'annonces en base (sans filtres)
+    const totalResponse = await fetch(`${SUPABASE_URL}/rest/v1/listings?select=id`, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Prefer': 'count=exact'
+      }
+    });
+    
+    const totalCount = parseInt(totalResponse.headers.get('content-range')?.split('/')[1] || '0');
+
+    // 3. Calculer les stats par district
     const districtStats = {};
     const today = new Date();
     const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -63,7 +79,6 @@ exports.handler = async (event) => {
           totalPrice: 0,
           totalArea: 0,
           pricesPerM2: [],
-          // Pour tendance
           countThisWeek: 0,
           pricesPerM2ThisWeek: [],
           countLastWeek: 0,
@@ -79,7 +94,6 @@ exports.handler = async (event) => {
       const pricePerM2 = listing.price / listing.area;
       stats.pricesPerM2.push(pricePerM2);
 
-      // Calculer tendance (cette semaine vs avant)
       const firstSeen = listing.first_seen ? new Date(listing.first_seen) : null;
       if (firstSeen) {
         if (firstSeen >= oneWeekAgo) {
@@ -92,15 +106,14 @@ exports.handler = async (event) => {
       }
     }
 
-    // 3. Calculer moyennes et tendances
+    // 4. Calculer moyennes et tendances
     const results = [];
 
     for (const [district, stats] of Object.entries(districtStats)) {
-      if (stats.count < 3) continue; // Minimum 3 annonces
+      if (stats.count < 3) continue;
 
       const avgPricePerM2 = stats.pricesPerM2.reduce((a, b) => a + b, 0) / stats.pricesPerM2.length;
       
-      // Tendance prix
       let priceTrend = null;
       let priceTrendPercent = 0;
       
@@ -131,16 +144,18 @@ exports.handler = async (event) => {
       });
     }
 
-    // Trier par nombre d'annonces
     results.sort((a, b) => b.count - a.count);
 
-    // 4. Stats globales
+    // 5. Stats globales
     const globalStats = {
       totalListings: listings.length,
+      totalInDatabase: totalCount,
       totalDistricts: results.length,
       avgPricePerM2: listings.length > 0 
         ? Math.round(listings.reduce((sum, l) => sum + l.price / l.area, 0) / listings.length)
         : 0,
+      city: city || 'Toutes les villes',
+      propertyType: propertyType || 'Tous types',
     };
 
     return {
@@ -149,7 +164,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         success: true,
         global: globalStats,
-        districts: results.slice(0, 20), // Top 20 districts
+        districts: results.slice(0, 20),
       })
     };
 
