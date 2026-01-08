@@ -26,49 +26,69 @@ exports.handler = async (event) => {
     const city = params.city || '';
     const propertyType = params.propertyType || '';
 
-    // 1. Récupérer toutes les annonces de la base
-    let url = `${SUPABASE_URL}/rest/v1/listings?select=district,city,price,area,price_per_m2,property_type,first_seen,last_seen&price=gt.0&area=gt.0`;
-    
+// 1. Récupérer TOUTES les annonces avec pagination
+let allListings = [];
+let offset = 0;
+const limit = 1000;
+let hasMore = true;
+
+while (hasMore) {
+  let url = `${SUPABASE_URL}/rest/v1/listings?select=district,city,price,area,price_per_m2,property_type,first_seen,last_seen&price=gt.0&area=gt.0&order=id&limit=${limit}&offset=${offset}`;
+  
   if (city) {
-  // Utiliser des termes simples pour éviter les problèmes d'encodage
-  let searchTerm = city;
-  if (city.includes('Hồ Chí Minh') || city.includes('Ho Chi Minh')) {
-    searchTerm = 'Minh';
-  } else if (city.includes('Hà Nội') || city.includes('Ha Noi')) {
-    searchTerm = 'Nội';
-  } else if (city.includes('Đà Nẵng')) {
-    searchTerm = 'Nẵng';
-  } else if (city.includes('Cần Thơ')) {
-    searchTerm = 'Thơ';
-  } else if (city.includes('Bình Định')) {
-    searchTerm = 'Định';
-  } else if (city.includes('Khánh Hòa')) {
-  searchTerm = 'Hòa';
-} else if (city.includes('Lâm Đồng') || city.includes('Đà Lạt') || city.includes('Da Lat')) {
-  searchTerm = 'Lâm Đồng';
-}
-  url += `&city=ilike.*${encodeURIComponent(searchTerm)}*`;
-}
-    
-    if (propertyType) {
-      url += `&property_type=ilike.*${encodeURIComponent(propertyType)}*`;
+    let searchTerm = city;
+    if (city.includes('Hồ Chí Minh') || city.includes('Ho Chi Minh')) {
+      searchTerm = 'Minh';
+    } else if (city.includes('Hà Nội') || city.includes('Ha Noi')) {
+      searchTerm = 'Nội';
+    } else if (city.includes('Đà Nẵng')) {
+      searchTerm = 'Nẵng';
+    } else if (city.includes('Cần Thơ')) {
+      searchTerm = 'Thơ';
+    } else if (city.includes('Bình Định')) {
+      searchTerm = 'Định';
+    } else if (city.includes('Khánh Hòa')) {
+      searchTerm = 'Hòa';
+    } else if (city.includes('Lâm Đồng') || city.includes('Đà Lạt') || city.includes('Da Lat')) {
+      searchTerm = 'Lâm Đồng';
     }
-
-const response = await fetch(url, {
-  headers: {
-    'apikey': SUPABASE_ANON_KEY,
-    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-    'Range': '0-9999',
-    'Prefer': 'count=exact'
+    url += `&city=ilike.*${encodeURIComponent(searchTerm)}*`;
   }
-});
+  
+  if (propertyType) {
+    url += `&property_type=ilike.*${encodeURIComponent(propertyType)}*`;
+  }
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch from Supabase');
+  const response = await fetch(url, {
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
     }
+  });
 
-    const listings = await response.json();
-    console.log(`Stats: ${listings.length} annonces récupérées (ville: ${city || 'toutes'}, type: ${propertyType || 'tous'})`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch from Supabase');
+  }
+
+  const listings = await response.json();
+  allListings = allListings.concat(listings);
+  
+  console.log(`Stats pagination: offset=${offset}, got ${listings.length} listings`);
+  
+  if (listings.length < limit) {
+    hasMore = false;
+  } else {
+    offset += limit;
+  }
+  
+  // Sécurité : max 10 requêtes (10000 annonces)
+  if (offset >= 10000) {
+    hasMore = false;
+  }
+}
+
+const listings = allListings;
+console.log(`Stats: ${listings.length} annonces récupérées au total (ville: ${city || 'toutes'})`);
 
     // 2. Compter le total d'annonces en base (sans filtres)
     const totalResponse = await fetch(`${SUPABASE_URL}/rest/v1/listings?select=id`, {
