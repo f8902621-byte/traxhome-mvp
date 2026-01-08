@@ -374,6 +374,7 @@ dbStatsHide: 'Masquer stats',
     { vn: 'Hải Phòng', en: 'Hai Phong', fr: 'Hai Phong' },
     { vn: 'Bà Rịa - Vũng Tàu', en: 'Ba Ria - Vung Tau', fr: 'Ba Ria - Vung Tau' },
     { vn: 'Bình Định', en: 'Binh Dinh (Quy Nhon)', fr: 'Binh Dinh (Quy Nhon)' },
+    { vn: 'Lâm Đồng', en: 'Lam Dong (Da Lat)', fr: 'Lam Dong (Da Lat)' },
   ];
 
   const districtsByCity = {
