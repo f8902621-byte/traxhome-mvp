@@ -29,13 +29,23 @@ exports.handler = async (event) => {
     // 1. Récupérer toutes les annonces de la base
     let url = `${SUPABASE_URL}/rest/v1/listings?select=district,city,price,area,price_per_m2,property_type,first_seen,last_seen&price=gt.0&area=gt.0`;
     
-    if (city) {
-  // Normaliser les noms de villes pour matcher la base
-  let citySearch = city;
-  if (city.toLowerCase().includes('hồ chí minh') || city.toLowerCase().includes('ho chi minh')) {
-    citySearch = 'Hồ Chí Minh';  // Matchera "Tp Hồ Chí Minh" et "Ho Chi Minh"
+  if (city) {
+  // Utiliser des termes simples pour éviter les problèmes d'encodage
+  let searchTerm = city;
+  if (city.includes('Hồ Chí Minh') || city.includes('Ho Chi Minh')) {
+    searchTerm = 'Minh';
+  } else if (city.includes('Hà Nội') || city.includes('Ha Noi')) {
+    searchTerm = 'Nội';
+  } else if (city.includes('Đà Nẵng')) {
+    searchTerm = 'Nẵng';
+  } else if (city.includes('Cần Thơ')) {
+    searchTerm = 'Thơ';
+  } else if (city.includes('Bình Định')) {
+    searchTerm = 'Định';
+  } else if (city.includes('Khánh Hòa')) {
+    searchTerm = 'Hòa';
   }
-  url += `&city=ilike.*${encodeURIComponent(citySearch)}*`;
+  url += `&city=ilike.*${encodeURIComponent(searchTerm)}*`;
 }
     
     if (propertyType) {
