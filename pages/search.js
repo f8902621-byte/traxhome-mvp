@@ -12,6 +12,7 @@ export default function SearchPage() {
   const [stats, setStats] = useState(null);
   const [dbStats, setDbStats] = useState(null);
 const [showDbStats, setShowDbStats] = useState(false);
+  const [statsCategory, setStatsCategory] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [expandedPhoto, setExpandedPhoto] = useState(null);
@@ -65,17 +66,17 @@ const [showDbStats, setShowDbStats] = useState(false);
     return () => window.removeEventListener('keydown', handleEscape);
   }, []);
   // Rafraîchir les stats quand les résultats changent
-  useEffect(() => {
+useEffect(() => {
   if (results.length > 0 && !showSearch) {
-    loadDbStats(searchParams.city, '');  // Ne pas filtrer par type pour les stats
+    loadDbStats(searchParams.city, statsCategory);
     setShowDbStats(true);
   }
-}, [results]);
-const loadDbStats = async (city = '', propertyType = '') => {
+}, [results, statsCategory]);
+const loadDbStats = async (city = '', category = '') => {
   try {
     let url = '/.netlify/functions/stats?';
     if (city) url += `city=${encodeURIComponent(city)}&`;
-    if (propertyType) url += `propertyType=${encodeURIComponent(propertyType)}`;
+    if (category) url += `category=${encodeURIComponent(category)}`;
     const response = await fetch(url);
     const data = await response.json();
     console.log('Stats reçues:', data);
@@ -785,12 +786,36 @@ dbStatsHide: 'Masquer stats',
       {!showSearch && (
         <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Database Stats Dashboard */}
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl shadow-lg p-4 mb-6 border border-indigo-100">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-bold text-indigo-800 flex items-center gap-2">
-                  {t.dbStatsTitle} {dbStats?.global?.city && `- ${dbStats.global.city}`}
-                </h3>
+           <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-bold text-indigo-800 flex items-center gap-2">
+                {t.dbStatsTitle} {dbStats?.global?.city && `- ${dbStats.global.city}`}
+              </h3>
+              <div className="flex items-center gap-2">
+                <select
+                  value={statsCategory}
+                  onChange={(e) => {
+                    setStatsCategory(e.target.value);
+                    loadDbStats(searchParams.city, e.target.value);
+                  }}
+                  className="px-2 py-1 text-sm border border-indigo-200 rounded-lg bg-white"
+                >
+                  <option value="">📊 Tous types</option>
+                  <option value="apartment">🏢 Appartements</option>
+                  <option value="house">🏠 Maisons/Villas</option>
+                  <option value="commercial">🏪 Commercial</option>
+                  <option value="land">🌳 Terrains</option>
+                </select>
                 <button 
+                  onClick={() => { 
+                    loadDbStats(searchParams.city, statsCategory);
+                    setShowDbStats(!showDbStats);
+                  }}
+                  className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-200"
+                >
+                  {showDbStats ? t.dbStatsHide : t.dbStatsShowMore}
+                </button>
+              </div>
+            </div>
                   onClick={() => { 
                     loadDbStats(searchParams.city, searchParams.propertyType);
 setShowDbStats(!showDbStats);
