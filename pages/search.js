@@ -786,7 +786,8 @@ dbStatsHide: 'Masquer stats',
       {!showSearch && (
         <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Database Stats Dashboard */}
-           <div className="flex items-center justify-between mb-3">
+           <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl shadow-lg p-4 mb-6 border border-indigo-100">
+            <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-bold text-indigo-800 flex items-center gap-2">
                 {t.dbStatsTitle} {dbStats?.global?.city && `- ${dbStats.global.city}`}
               </h3>
@@ -817,8 +818,7 @@ dbStatsHide: 'Masquer stats',
               </div>
             </div>
                  
-              </div>
-              
+                        
               {dbStats && showDbStats && (
                 <>
                   {/* Global Stats */}
