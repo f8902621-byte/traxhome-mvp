@@ -169,7 +169,7 @@ exports.handler = async (event) => {
       avgPricePerM2: listings.length > 0 
         ? Math.round(listings.reduce((sum, l) => sum + l.price / l.area, 0) / listings.length)
         : 0,
-      city: city || 'Toutes les villes',
+      city: city ? (city === 'Minh' ? 'Hồ Chí Minh' : city === 'Nội' ? 'Hà Nội' : city === 'Nẵng' ? 'Đà Nẵng' : city === 'Thơ' ? 'Cần Thơ' : city) : 'Toutes les villes',
       propertyType: propertyType || 'Tous types',
     };
 
