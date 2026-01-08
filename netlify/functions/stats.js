@@ -24,89 +24,112 @@ exports.handler = async (event) => {
     // Paramètres
     const params = event.queryStringParameters || {};
     const city = params.city || '';
-    const propertyType = params.propertyType || '';
+    const category = params.category || '';
 
-// 1. Récupérer TOUTES les annonces avec pagination
-let allListings = [];
-let offset = 0;
-const limit = 1000;
-let hasMore = true;
+    // Mapping des catégories vers les types de biens
+    const categoryTypes = {
+      'apartment': ['căn hộ', 'chung cư', 'studio', 'penthouse'],
+      'house': ['nhà ở', 'nhà phố', 'biệt thự', 'villa', 'nhà riêng', 'nhà mặt tiền', 'nhà hẻm'],
+      'commercial': ['shophouse', 'văn phòng', 'cửa hàng', 'mặt bằng', 'kho', 'nhà xưởng', 'khách sạn'],
+      'land': ['đất', 'đất nền', 'đất thổ cư', 'đất nông nghiệp']
+    };
 
-while (hasMore) {
-  let url = `${SUPABASE_URL}/rest/v1/listings?select=district,city,price,area,price_per_m2,property_type,first_seen,last_seen&price=gt.0&area=gt.0&order=id&limit=${limit}&offset=${offset}`;
-  
-  if (city) {
-    let searchTerm = city;
-    if (city.includes('Hồ Chí Minh') || city.includes('Ho Chi Minh')) {
-      searchTerm = 'Minh';
-    } else if (city.includes('Hà Nội') || city.includes('Ha Noi')) {
-      searchTerm = 'Nội';
-    } else if (city.includes('Đà Nẵng')) {
-      searchTerm = 'Nẵng';
-    } else if (city.includes('Cần Thơ')) {
-      searchTerm = 'Thơ';
-    } else if (city.includes('Bình Định')) {
-      searchTerm = 'Định';
-    } else if (city.includes('Khánh Hòa')) {
-      searchTerm = 'Hòa';
-    } else if (city.includes('Lâm Đồng') || city.includes('Đà Lạt') || city.includes('Da Lat')) {
-      searchTerm = 'Lâm Đồng';
+    const categoryLabels = {
+      'apartment': '🏢 Appartements',
+      'house': '🏠 Maisons/Villas',
+      'commercial': '🏪 Commercial',
+      'land': '🌳 Terrains',
+      '': 'Tous types'
+    };
+
+    // 1. Récupérer TOUTES les annonces avec pagination
+    let allListings = [];
+    let offset = 0;
+    const limit = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+      let url = `${SUPABASE_URL}/rest/v1/listings?select=district,city,price,area,price_per_m2,property_type,first_seen,last_seen&price=gt.0&area=gt.0&order=id&limit=${limit}&offset=${offset}`;
+      
+      if (city) {
+        let searchTerm = city;
+        if (city.includes('Hồ Chí Minh') || city.includes('Ho Chi Minh')) {
+          searchTerm = 'Minh';
+        } else if (city.includes('Hà Nội') || city.includes('Ha Noi')) {
+          searchTerm = 'Nội';
+        } else if (city.includes('Đà Nẵng')) {
+          searchTerm = 'Nẵng';
+        } else if (city.includes('Cần Thơ')) {
+          searchTerm = 'Thơ';
+        } else if (city.includes('Bình Định')) {
+          searchTerm = 'Định';
+        } else if (city.includes('Khánh Hòa')) {
+          searchTerm = 'Hòa';
+        } else if (city.includes('Lâm Đồng') || city.includes('Đà Lạt') || city.includes('Da Lat')) {
+          searchTerm = 'Lâm Đồng';
+        }
+        url += `&city=ilike.*${encodeURIComponent(searchTerm)}*`;
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch from Supabase');
+      }
+
+      const listings = await response.json();
+      allListings = allListings.concat(listings);
+      
+      console.log(`Stats pagination: offset=${offset}, got ${listings.length} listings`);
+      
+      if (listings.length < limit) {
+        hasMore = false;
+      } else {
+        offset += limit;
+      }
+      
+      // Sécurité : max 10 requêtes (10000 annonces)
+      if (offset >= 10000) {
+        hasMore = false;
+      }
     }
-    url += `&city=ilike.*${encodeURIComponent(searchTerm)}*`;
-  }
-  
-  if (propertyType) {
-    url += `&property_type=ilike.*${encodeURIComponent(propertyType)}*`;
-  }
 
-  const response = await fetch(url, {
-    headers: {
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    console.log(`Stats: ${allListings.length} annonces récupérées au total (ville: ${city || 'toutes'})`);
+
+    // 2. Filtrer par catégorie si spécifiée
+    let finalListings = allListings;
+    if (category && categoryTypes[category]) {
+      const types = categoryTypes[category];
+      finalListings = allListings.filter(item => {
+        const propType = (item.property_type || '').toLowerCase();
+        return types.some(t => propType.includes(t));
+      });
+      console.log(`Stats: filtré par catégorie "${category}": ${allListings.length} → ${finalListings.length}`);
     }
-  });
 
-  if (!response.ok) {
-    throw new Error('Failed to fetch from Supabase');
-  }
-
-  const listings = await response.json();
-  allListings = allListings.concat(listings);
-  
-  console.log(`Stats pagination: offset=${offset}, got ${listings.length} listings`);
-  
-  if (listings.length < limit) {
-    hasMore = false;
-  } else {
-    offset += limit;
-  }
-  
-  // Sécurité : max 10 requêtes (10000 annonces)
-  if (offset >= 10000) {
-    hasMore = false;
-  }
-}
-
-const listings = allListings;
-console.log(`Stats: ${listings.length} annonces récupérées au total (ville: ${city || 'toutes'})`);
-
-    // 2. Compter le total d'annonces en base (sans filtres)
+    // 3. Compter le total d'annonces en base (sans filtres)
     const totalResponse = await fetch(`${SUPABASE_URL}/rest/v1/listings?select=id`, {
       headers: {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Prefer': 'count=exact'
+        'Prefer': 'count=exact',
+        'Range': '0-0'
       }
     });
     
     const totalCount = parseInt(totalResponse.headers.get('content-range')?.split('/')[1] || '0');
 
-    // 3. Calculer les stats par district
+    // 4. Calculer les stats par district
     const districtStats = {};
     const today = new Date();
     const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    for (const listing of listings) {
+    for (const listing of finalListings) {
       const district = (listing.district || 'Inconnu').trim();
       if (!district || district === 'Inconnu') continue;
 
@@ -145,7 +168,7 @@ console.log(`Stats: ${listings.length} annonces récupérées au total (ville: $
       }
     }
 
-    // 4. Calculer moyennes et tendances
+    // 5. Calculer moyennes et tendances
     const results = [];
 
     for (const [district, stats] of Object.entries(districtStats)) {
@@ -185,16 +208,17 @@ console.log(`Stats: ${listings.length} annonces récupérées au total (ville: $
 
     results.sort((a, b) => b.count - a.count);
 
-    // 5. Stats globales
+    // 6. Stats globales
     const globalStats = {
-      totalListings: listings.length,
+      totalListings: finalListings.length,
       totalInDatabase: totalCount,
       totalDistricts: results.length,
-      avgPricePerM2: listings.length > 0 
-        ? Math.round(listings.reduce((sum, l) => sum + l.price / l.area, 0) / listings.length)
+      avgPricePerM2: finalListings.length > 0 
+        ? Math.round(finalListings.reduce((sum, l) => sum + l.price / l.area, 0) / finalListings.length)
         : 0,
-      city: city ? (city === 'Minh' ? 'Hồ Chí Minh' : city === 'Nội' ? 'Hà Nội' : city === 'Nẵng' ? 'Đà Nẵng' : city === 'Thơ' ? 'Cần Thơ' : city) : 'Toutes les villes',
-      propertyType: propertyType || 'Tous types',
+      city: city || 'Toutes les villes',
+      category: category,
+      categoryLabel: categoryLabels[category] || 'Tous types',
     };
 
     return {
