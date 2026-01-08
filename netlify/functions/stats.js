@@ -30,8 +30,13 @@ exports.handler = async (event) => {
     let url = `${SUPABASE_URL}/rest/v1/listings?select=district,city,price,area,price_per_m2,property_type,first_seen,last_seen&price=gt.0&area=gt.0`;
     
     if (city) {
-      url += `&city=ilike.*${encodeURIComponent(city)}*`;
-    }
+  // Normaliser les noms de villes pour matcher la base
+  let citySearch = city;
+  if (city.toLowerCase().includes('hồ chí minh') || city.toLowerCase().includes('ho chi minh')) {
+    citySearch = 'Hồ Chí Minh';  // Matchera "Tp Hồ Chí Minh" et "Ho Chi Minh"
+  }
+  url += `&city=ilike.*${encodeURIComponent(citySearch)}*`;
+}
     
     if (propertyType) {
       url += `&property_type=ilike.*${encodeURIComponent(propertyType)}*`;
