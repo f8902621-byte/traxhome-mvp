@@ -727,13 +727,19 @@ function filterByKeywords(results, includeKeywords, excludeKeywords) {
     }
     
     // Vérifier inclusions (si spécifiées)
+    // Vérifier inclusions (si spécifiées)
     if (includeKeywords.length > 0) {
       let hasMatch = false;
       for (const kw of includeKeywords) {
-        if (combined.includes(removeVietnameseAccents(kw))) {
+        const kwNormalized = removeVietnameseAccents(kw);
+        if (combined.includes(kwNormalized)) {
           hasMatch = true;
+          console.log(`MATCH FOUND: "${kw}" in "${combined.substring(0, 60)}..."`);
           break;
         }
+      }
+      if (!hasMatch) {
+        console.log(`NO MATCH: keywords=${JSON.stringify(includeKeywords.map(k => removeVietnameseAccents(k)))} not in "${combined.substring(0, 60)}..."`);
       }
       return hasMatch;
     }
