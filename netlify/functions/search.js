@@ -716,7 +716,7 @@ function filterByKeywords(results, includeKeywords, excludeKeywords) {
     const title = removeVietnameseAccents(item.title || '');
     const propertyType = removeVietnameseAccents(item.propertyType || '');
     const combined = title + ' ' + propertyType;
-    
+    console.log(`DEBUG filterByKeywords: title="${title.substring(0,50)}", keywords=${JSON.stringify(includeKeywords)}`);
     // Vérifier exclusions d'abord
     if (excludeKeywords.length > 0) {
       for (const kw of excludeKeywords) {
