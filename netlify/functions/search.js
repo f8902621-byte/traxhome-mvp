@@ -838,7 +838,102 @@ async function fetchBatdongsan(propertyType) {
     return [];
   }
 }
-
+// ============================================
+// ALONHADAT - SCRAPING VIA SCRAPERAPI
+// ============================================
+async function fetchAlonhadat(params) {
+  const { city, propertyType } = params;
+  
+  const cityMapping = {
+    'ho chi minh': 'ho-chi-minh',
+    'ha noi': 'ha-noi',
+    'da nang': 'da-nang',
+    'binh duong': 'binh-duong',
+    'khanh hoa': 'khanh-hoa',
+    'can tho': 'can-tho',
+    'hai phong': 'hai-phong',
+    'ba ria vung tau': 'ba-ria-vung-tau',
+    'lam dong': 'lam-dong',
+    'binh dinh': 'binh-dinh',
+  };
+  
+  const typeMapping = {
+    'can ho chung cu': 'can-ho-chung-cu',
+    'nha o': 'nha-dat',
+    'nha biet thu': 'biet-thu',
+    'biet thu': 'biet-thu',
+    'villa': 'biet-thu',
+    'dat': 'dat-nen',
+    'shophouse': 'shophouse',
+    'van phong': 'van-phong',
+    'kho nha xuong': 'nha-xuong-kho',
+  };
+  
+  const cityNorm = removeVietnameseAccents(city || '').toLowerCase();
+  const typeNorm = removeVietnameseAccents(propertyType || '').toLowerCase();
+  
+  let citySlug = 'ho-chi-minh';
+  for (const [key, value] of Object.entries(cityMapping)) {
+    if (cityNorm.includes(key)) { citySlug = value; break; }
+  }
+  
+  let typeSlug = 'nha-dat';
+  for (const [key, value] of Object.entries(typeMapping)) {
+    if (typeNorm.includes(key)) { typeSlug = value; break; }
+  }
+  
+  try {
+    const baseUrl = process.env.URL || 'https://ktrix-vn.netlify.app';
+    const url = `${baseUrl}/.netlify/functions/alonhadat?city=${citySlug}&propertyType=${typeSlug}&maxPages=2`;
+    
+    console.log(`Alonhadat: Fetching ${citySlug}/${typeSlug}`);
+    
+    const response = await fetch(url);
+    if (!response.ok) return [];
+    
+    const data = await response.json();
+    if (!data.success || !data.listings) return [];
+    
+    console.log(`Alonhadat: ${data.listings.length} annonces`);
+    
+    return data.listings.map(item => {
+      const nlp = analyzeListingText(item.title, item.description || '');
+      return {
+        id: item.external_id || `alonhadat_${Date.now()}_${Math.random()}`,
+        title: item.title || '',
+        body: item.description || '',
+        price: item.price || 0,
+        area: item.area || 0,
+        address: item.address || '',
+        district: item.district || '',
+        city: item.city || city || '',
+        bedrooms: item.bedrooms || null,
+        bathrooms: item.bathrooms || null,
+        thumbnail: item.image || '',
+        images: item.image ? [item.image] : [],
+        url: item.url || '',
+        source: 'alonhadat.com.vn',
+        postedOn: item.posted_date || '',
+        list_time: item.posted_date ? new Date(item.posted_date).getTime() : 0,
+        propertyType: item.property_type || '',
+        floors: item.floors || nlp.extractedFloors,
+        streetWidth: nlp.extractedStreetWidth,
+        facadeWidth: nlp.extractedFacade,
+        nlpAnalysis: nlp,
+        extractedRentalIncome: nlp.extractedRentalIncome,
+        hasMetroNearby: nlp.hasMetroNearby,
+        hasNewRoad: nlp.hasNewRoad,
+        hasInvestmentPotential: nlp.hasInvestmentPotential,
+        hasLegalIssue: nlp.hasLegalIssue,
+        hasPlanningRisk: nlp.hasPlanningRisk,
+        detectedKeywords: nlp.detectedKeywords,
+      };
+    });
+  } catch (error) {
+    console.error('Alonhadat error:', error.message);
+    return [];
+  }
+}
 // ============================================
 // FILTRES POST-API
 // ============================================
@@ -1339,7 +1434,13 @@ if (sources?.includes('chotot')) {
         console.log(`Nhadat247: ignoré (ville=${city} n'est pas HCM)`);
       }
     }
-    
+    // ALONHADAT - Scraping via ScraperAPI
+    if (sources?.includes('alonhadat')) {
+      const alonhadatResults = await fetchAlonhadat({ city, propertyType });
+      const filtered = applyFilters(alonhadatResults, { city, district, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, legalStatus });
+      console.log(`Alonhadat: ${alonhadatResults.length} → ${filtered.length} après filtres`);
+      allResults.push(...filtered);
+    }
     console.log(`TOTAL BRUT: ${allResults.length}`);
     
     // Déduplication
