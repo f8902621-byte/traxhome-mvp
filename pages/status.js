@@ -8,7 +8,11 @@ export default function StatusPage() {
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
+const [debugMode, setDebugMode] = useState(false);
 
+useEffect(() => {
+  setDebugMode(router.query.debug === 'true');
+}, [router.query]);
   const fetchHealth = async (full = false) => {
     setLoading(true);
     try {
@@ -123,14 +127,16 @@ export default function StatusPage() {
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </button>
-            <button
-              onClick={() => fetchHealth(true)}
-              disabled={loading}
-              className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg font-medium flex items-center gap-2 hover:bg-orange-200 disabled:opacity-50"
-            >
-              <Search className="w-4 h-4" />
-              Full Test
-            </button>
+{debugMode && (
+  <button
+    onClick={() => fetchHealth(true)}
+    disabled={loading}
+    className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg font-medium flex items-center gap-2 hover:bg-orange-200 disabled:opacity-50"
+  >
+    <Search className="w-4 h-4" />
+    Full Test
+  </button>
+)}
           </div>
         </div>
       </header>
@@ -204,7 +210,7 @@ export default function StatusPage() {
         </div>
 
         {/* Tests */}
-        {health?.tests?.length > 0 && (
+        {debugMode && health?.tests?.length > 0 && (
           <>
             <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
               <Search className="w-5 h-5" />
