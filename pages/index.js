@@ -428,6 +428,7 @@ const sources = [
               <a href="mailto:contact@ktrix.ai" className="hover:text-white transition">{t.footerContact}</a>
               <a href="#" className="hover:text-white transition">{t.footerPrivacy}</a>
               <a href="#" className="hover:text-white transition">{t.footerTerms}</a>
+<a href="/status" className="hover:text-white transition">Status</a>
             </div>
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
