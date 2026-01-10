@@ -1,4 +1,4 @@
-// netlify/functions/test-bds.js
+// netlify/functions/test-bds.js - Version debug
 
 const SCRAPER_API_KEY = process.env.SCRAPER_API_KEY;
 
@@ -12,46 +12,38 @@ exports.handler = async (event) => {
     const targetUrl = 'https://batdongsan.com.vn/ban-can-ho-chung-cu-tp-hcm?gcn=5-ty';
     const scraperUrl = `https://api.scraperapi.com/?api_key=${SCRAPER_API_KEY}&url=${encodeURIComponent(targetUrl)}&country_code=vn`;
     
-    console.log('[BDS Test] Fetching via ScraperAPI...');
-    const startTime = Date.now();
-    
     const response = await fetch(scraperUrl);
-    const duration = Date.now() - startTime;
-    
-    console.log(`[BDS Test] Response: ${response.status} (${duration}ms)`);
-    
-    if (!response.ok) {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          success: false,
-          error: `HTTP ${response.status}`,
-          duration
-        })
-      };
-    }
-    
     const html = await response.text();
     
-    // Vérifier si on a du contenu Batdongsan
-    const hasListings = html.includes('js__card') || html.includes('product-item') || html.includes('re__card');
-    const hasBlocked = html.includes('blocked') || html.includes('captcha') || html.includes('Access Denied');
+    // Chercher tous les patterns de classes possibles
+    const patterns = {
+      'js__card': (html.match(/js__card/gi) || []).length,
+      're__card': (html.match(/re__card/gi) || []).length,
+      'product-item': (html.match(/product-item/gi) || []).length,
+      'pr-container': (html.match(/pr-container/gi) || []).length,
+      'listing-item': (html.match(/listing-item/gi) || []).length,
+      'js__product': (html.match(/js__product/gi) || []).length,
+      'pr-title': (html.match(/pr-title/gi) || []).length,
+      're__srp-list': (html.match(/re__srp-list/gi) || []).length,
+      'ProductItem': (html.match(/ProductItem/gi) || []).length,
+      'data-product': (html.match(/data-product/gi) || []).length,
+    };
     
-    // Compter les annonces potentielles
-    const cardCount = (html.match(/js__card|re__card|product-item/gi) || []).length;
+    // Extraire un échantillon autour de "tỷ" (prix)
+    const priceMatch = html.match(/.{200}tỷ.{200}/i);
+    
+    // Extraire les URLs d'annonces
+    const urlMatches = html.match(/href="\/ban-[^"]+pr\d+"/gi) || [];
     
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        duration,
         htmlLength: html.length,
-        hasListings,
-        hasBlocked,
-        cardCount,
-        sample: html.substring(0, 1000) // Premier 1000 caractères pour debug
+        patterns,
+        sampleUrls: urlMatches.slice(0, 5),
+        priceSample: priceMatch ? priceMatch[0] : 'not found',
       }, null, 2)
     };
     
