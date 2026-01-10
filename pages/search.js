@@ -385,9 +385,10 @@ dbStatsHide: 'Masquer stats',
     { vn: 'Bất động sản khác', en: 'Other Property', fr: 'Autre Bien', category: 'other' },
   ];
 
- const availableSources = [
+const availableSources = [
   { id: 'chotot', name: 'Chotot.com', active: true },
   { id: 'alonhadat', name: 'Alonhadat.com.vn', active: true },
+  { id: 'batdongsan', name: 'Batdongsan.com.vn', active: true },
 ];
   const vietnamCities = [
     { vn: 'Hồ Chí Minh', en: 'Ho Chi Minh City', fr: 'Hô-Chi-Minh-Ville' },
