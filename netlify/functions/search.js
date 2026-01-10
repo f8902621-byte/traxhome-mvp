@@ -898,19 +898,6 @@ async function fetchBatdongsan(params) {
   }
 }
     
-    // Appliquer filtrage par mots-clés
-    if (typeMapping.include.length > 0 || typeMapping.exclude.length > 0) {
-      const beforeFilter = results.length;
-      results = filterByKeywords(results, typeMapping.include, typeMapping.exclude);
-      console.log(`Batdongsan filtre mots-clés: ${beforeFilter} → ${results.length}`);
-    }
-    
-    return results;
-  } catch (error) {
-    console.error('Batdongsan error:', error);
-    return [];
-  }
-}
 // ============================================
 // ALONHADAT - SCRAPING VIA SCRAPERAPI
 // ============================================
