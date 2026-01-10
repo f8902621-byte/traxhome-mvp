@@ -17,6 +17,8 @@ const CITY_MAPPING = {
   'khanh hoa': 'khanh-hoa',
   'ba ria - vung tau': 'ba-ria-vung-tau',
   'lam dong': 'lam-dong',
+  'binh dinh': 'quy-nhon-bdd',
+  'quy nhon': 'quy-nhon-bdd',
 };
 
 // Mapping des types de biens
