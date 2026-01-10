@@ -48,7 +48,7 @@ function buildSearchUrl(params) {
   const cityNorm = normalizeString(city);
   const typeNorm = normalizeString(propertyType);
   
-  const citySlug = CITY_MAPPING[cityNorm] || 'tp-hcm';
+  const citySlug = cityMapping[cityNorm] || 'tp-hcm';
   const typeSlug = PROPERTY_TYPE_MAPPING[typeNorm] || 'ban-can-ho-chung-cu';
   
   let url = 'https://batdongsan.com.vn/' + typeSlug + '-' + citySlug;
