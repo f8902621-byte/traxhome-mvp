@@ -86,9 +86,10 @@ async function testAlonhadat() {
       };
     }
     
-    const html = await response.text();
-    const hasContent = html.includes('property-item') || html.includes('alonhadat');
-    const articleCount = (html.match(/class="property-item"/g) || []).length;
+ const html = await response.text();
+const hasContent = html.includes('alonhadat');
+// Compter les articles comme dans le vrai scraper
+const articleCount = (html.match(/<article\s+class=["']property-item["']/gi) || []).length;
     
     return {
       source: 'Alonhadat',
