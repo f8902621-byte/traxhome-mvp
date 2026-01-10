@@ -54,7 +54,7 @@ export default function Landing() {
       footerContact: 'Liên hệ',
       footerPrivacy: 'Bảo mật',
       footerTerms: 'Điều khoản',
-      copyright: '© 2024 K Trix. Đang phát triển.',
+      copyright: '© 2026 K Trix. Đang phát triển.',
     },
     en: {
       tagline: 'Smart Real Estate Search Platform',
@@ -101,7 +101,7 @@ export default function Landing() {
       footerContact: 'Contact',
       footerPrivacy: 'Privacy',
       footerTerms: 'Terms',
-      copyright: '© 2024 K Trix. In development.',
+      copyright: '© 2026 K Trix. In development.',
     },
     fr: {
       tagline: 'Plateforme de Recherche Immobilière Intelligente',
@@ -148,7 +148,7 @@ export default function Landing() {
       footerContact: 'Contact',
       footerPrivacy: 'Confidentialité',
       footerTerms: 'Conditions',
-      copyright: '© 2024 K Trix. En développement.',
+      copyright: '© 2026 K Trix. En développement.',
     }
   }[language];
 
