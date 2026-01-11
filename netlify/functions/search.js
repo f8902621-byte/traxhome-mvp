@@ -1494,7 +1494,7 @@ exports.handler = async (event) => {
     
 // APPELS SOURCES EN PARALLÈLE
 const sourcePromises = [];
-
+console.log('Sources demandées:', sources);
 // CHOTOT - Source principale
 if (sources?.includes('chotot')) {
   sourcePromises.push(
