@@ -1559,8 +1559,6 @@ for (const { source, results, timeout } of sourceResults) {
   }
 }
 
-console.log(`TOTAL BRUT: ${allResults.length}`);
-}
     console.log(`TOTAL BRUT: ${allResults.length}`);
     
     // Déduplication
