@@ -1624,7 +1624,7 @@ while (hasMore && mixedResults.length < 150) {
 // Remplacer sortedResults par mixedResults
 sortedResults = mixedResults;
     // Limiter à 100 résultats
- const results = sortedResults.slice(0, 100).map((item, i) => {
+ const results = sortedResults.slice(0, 200).map((item, i) => {
       const negotiation = calculateNegotiationScore(item, avgPricePerM2);
       const pricePosition = analyzePricePosition(item, districtStats);
       
