@@ -1505,7 +1505,7 @@ if (sources?.includes('chotot')) {
 if (sources?.includes('batdongsan')) {
   try {
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Timeout')), 8000)
+      setTimeout(() => reject(new Error('Timeout')), 20000)
     );
     const fetchPromise = fetchBatdongsan({ city, propertyType, priceMax });
     const batdongsanResults = await Promise.race([fetchPromise, timeoutPromise]);
@@ -1538,7 +1538,7 @@ if (sources?.includes('batdongsan')) {
 if (sources?.includes('alonhadat')) {
   try {
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Timeout')), 8000)
+      setTimeout(() => reject(new Error('Timeout')), 20000)
     );
     const fetchPromise = fetchAlonhadat({ city, propertyType });
     const alonhadatResults = await Promise.race([fetchPromise, timeoutPromise]);
