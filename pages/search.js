@@ -934,25 +934,8 @@ const availableSources = [
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {sortResults(results).map((prop) => (
                   <div key={prop.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
-                  <div className="relative h-48 bg-slate-200">
-                      {prop.imageUrl ? (
-                       {prop.imageUrl ? (
-                        <img src={prop.imageUrl} alt={prop.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-sky-500 to-blue-600">
-                          <div className="text-center text-white">
-                            <div className="text-5xl mb-2">🏠</div>
-                            <div className="text-sm font-medium opacity-90">{prop.source}</div>
-                          </div>
-                        </div>
-                      )}
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-blue-500">
-                          <span className="text-white text-4xl">🏠</span>
-                        </div>
-                      )}
-)}
-
+                    <div className="relative h-48 bg-slate-200">
+                      <img src={prop.imageUrl} alt={prop.title} className="w-full h-full object-cover" />
                       {prop.isNew && <div className="absolute top-2 left-2 bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-xs font-bold animate-pulse">{t.newListing}</div>}
                       {prop.urgentKeywords && prop.urgentKeywords.length > 0 && (
                         <div className="absolute top-2 right-2 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
@@ -1027,16 +1010,7 @@ const availableSources = [
             
             {/* Image */}
             <div className="relative h-48 md:h-64 bg-slate-200">
-              {selectedProperty.imageUrl ? (
-                <img src={selectedProperty.imageUrl} alt={selectedProperty.title} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-sky-500 to-blue-600">
-                  <div className="text-center text-white">
-                    <div className="text-6xl mb-2">🏠</div>
-                    <div className="text-sm font-medium opacity-90">{selectedProperty.source}</div>
-                  </div>
-                </div>
-              )}
+              <img src={selectedProperty.imageUrl} alt={selectedProperty.title} className="w-full h-full object-cover" />
               {selectedProperty.urgentKeywords && selectedProperty.urgentKeywords.length > 0 && (
                 <div className="absolute top-3 right-3 bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold animate-pulse">
                   🔥 {selectedProperty.urgentKeywords[0]}
