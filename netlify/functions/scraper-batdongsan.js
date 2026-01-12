@@ -159,10 +159,10 @@ function parseListings(html, city, propertyType) {
         var jsonMatch = jsonPriceRegex.exec(productBlock);
         if (jsonMatch) {
           var priceInDong = parseInt(jsonMatch[1]);
-if (priceInDong > 100000000) {
-  var extractedPrice = priceInDong;
-  var extractedPriceRaw = (priceInDong / 1000000000).toFixed(2) + ' tỷ (JSON)';
-  priceMatch = true;
+          if (priceInDong > 100000000) {
+            listing.price = priceInDong;
+            listing.price_raw = (priceInDong / 1000000000).toFixed(2) + ' tỷ (JSON)';
+            priceMatch = true;
           }
         }
       }
@@ -173,23 +173,19 @@ if (priceInDong > 100000000) {
         var jsonMatch2 = jsonPriceRegex2.exec(context);
         if (jsonMatch2) {
           var priceInDong2 = parseInt(jsonMatch2[1]);
-if (priceInDong2 > 100000000) {
-  var extractedPrice = priceInDong2;
-  var extractedPriceRaw = (priceInDong2 / 1000000000).toFixed(2) + ' tỷ (JSON)';
-  priceMatch = true;
+          if (priceInDong2 > 100000000) {
+            listing.price = priceInDong2;
+            listing.price_raw = (priceInDong2 / 1000000000).toFixed(2) + ' tỷ (JSON)';
+            priceMatch = true;
           }
         }
       }
       
-// Si pas trouvé en JSON, chercher dans re__card-config-price
-      if (!priceMatch) {
-        var cardPriceRegex = /re__card-config-price[^>]*>([\d,]+)\s*t[yỷ]/gi;
-        priceMatch = cardPriceRegex.exec(context);
-      }
-      
-      // Fallback: patterns textuels génériques
+      // Si pas trouvé en JSON, essayer les patterns textuels
       if (!priceMatch) {
         var pricePatterns = [
+          /([\d]+[,.][\d]+)\s*t[yỷ]/gi,
+          /([\d]+)\s*t[yỷ]/gi,
           />([\d]+[,.][\d]+)\s*t[yỷ]/gi,
           />([\d]+)\s*t[yỷ]/gi,
         ];
@@ -275,25 +271,16 @@ if (priceInDong2 > 100000000) {
       property_type: propertyType,
       scraped_at: new Date().toISOString()
     };
-    if (extractedPrice) {
-      listing.price = extractedPrice;
-      listing.price_raw = extractedPriceRaw;
-    }
-if (priceMatch && !listing.price) {
+    
+    if (priceMatch && !listing.price) {
       var priceValue = parseFloat(priceMatch[1].replace(',', '.'));
       if (isTrieu) {
         priceValue = priceValue / 1000; // Convertir triệu en tỷ
       }
-      // Validation: prix entre 100 triệu (0.1 tỷ) et 500 tỷ
-      if (!isNaN(priceValue) && priceValue >= 0.1 && priceValue <= 500) {
+      if (!isNaN(priceValue) && priceValue > 0) {
         listing.price = Math.round(priceValue * 1000000000);
         listing.price_raw = priceMatch[0];
       }
-    }
-    
-    // Si toujours pas de prix, ne pas inclure cette annonce
-    if (!listing.price) {
-      continue; // Skip cette annonce
     }
     
     if (areaMatch) {
