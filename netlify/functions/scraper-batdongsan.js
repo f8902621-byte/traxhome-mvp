@@ -149,35 +149,14 @@ function parseListings(html, city, propertyType) {
     if (urlIndex > 0) {
       var context = html.substring(Math.max(0, urlIndex - 2000), Math.min(html.length, urlIndex + 3000));
       
-// Prix - Méthode 1: Extraction depuis la classe re__card-config-price (la plus fiable)
-      var priceClassRegex = /re__card-config-price[^>]*>([^<]+)</gi;
-      var priceClassMatch = priceClassRegex.exec(context);
-      if (priceClassMatch) {
-        var priceText = priceClassMatch[1].trim();
-        // Parser "1,79 tỷ" ou "850 triệu"
-        var tyMatch = priceText.match(/([\d,.]+)\s*t/i);
-        var trieuMatch = priceText.match(/([\d,.]+)\s*tr/i);
-        if (tyMatch) {
-          var priceValue = parseFloat(tyMatch[1].replace(',', '.'));
-          if (!isNaN(priceValue) && priceValue > 0) {
-            listing.price = Math.round(priceValue * 1000000000);
-            listing.price_raw = priceText;
-            priceMatch = true;
-          }
-        } else if (trieuMatch) {
-          var priceValue = parseFloat(trieuMatch[1].replace(',', '.'));
-          if (!isNaN(priceValue) && priceValue > 0) {
-            listing.price = Math.round(priceValue * 1000000);
-            listing.price_raw = priceText;
-            priceMatch = true;
-          }
-        }
-      }
-      
-      // Prix - Méthode 2: JSON embarqué
-      if (!priceMatch) {
-        var jsonPriceRegex = /price:\s*(\d{6,12}),/g;
-        var jsonMatch = jsonPriceRegex.exec(context);
+// Prix - Extraction depuis JSON embarqué (méthode la plus fiable)
+      // Chercher dans tout le HTML avec l'ID du produit
+      var productIdRegex = new RegExp('productId["\']?:\\s*' + id + '[,\\s]');
+      var productBlockStart = html.search(productIdRegex);
+      if (productBlockStart > 0) {
+        var productBlock = html.substring(productBlockStart, productBlockStart + 500);
+        var jsonPriceRegex = /price["\']?:\s*(\d{6,12})[,\s]/g;
+        var jsonMatch = jsonPriceRegex.exec(productBlock);
         if (jsonMatch) {
           var priceInDong = parseInt(jsonMatch[1]);
           if (priceInDong > 100000000) {
@@ -188,15 +167,17 @@ function parseListings(html, city, propertyType) {
         }
       }
       
-      // Prix - Méthode 3: Patterns textuels génériques
+      // Fallback: chercher price: dans le contexte local
       if (!priceMatch) {
-        var pricePatterns = [
-          /([\d]+[,.][\d]+)\s*t[yỷ]/gi,
-          /([\d]+)\s*t[yỷ]/gi,
-        ];
-        
-        for (var pi = 0; pi < pricePatterns.length && !priceMatch; pi++) {
-          priceMatch = pricePatterns[pi].exec(context);
+        var jsonPriceRegex2 = /price:\s*(\d{6,12}),/g;
+        var jsonMatch2 = jsonPriceRegex2.exec(context);
+        if (jsonMatch2) {
+          var priceInDong2 = parseInt(jsonMatch2[1]);
+          if (priceInDong2 > 100000000) {
+            listing.price = priceInDong2;
+            listing.price_raw = (priceInDong2 / 1000000000).toFixed(2) + ' tỷ (JSON)';
+            priceMatch = true;
+          }
         }
       }
       
