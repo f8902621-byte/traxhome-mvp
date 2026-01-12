@@ -89,9 +89,13 @@ function buildSearchUrl(params) {
 }
 
 async function scrapeWithScraperAPI(targetUrl) {
-  var scraperUrl = 'https://api.scraperapi.com/?api_key=' + SCRAPER_API_KEY + '&url=' + encodeURIComponent(targetUrl) + '&country_code=vn';
+  // render=true pour executer le JavaScript et obtenir les images
+  // Coute 5 credits au lieu de 1, mais necessaire pour BDS
+  var scraperUrl = 'https://api.scraperapi.com/?api_key=' + SCRAPER_API_KEY + 
+    '&url=' + encodeURIComponent(targetUrl) + 
+    '&country_code=vn&render=true';
   
-  console.log('[BDS] Scraping: ' + targetUrl);
+  console.log('[BDS] Scraping with render: ' + targetUrl);
   var startTime = Date.now();
   
   var response = await fetch(scraperUrl);
@@ -145,7 +149,7 @@ function parseListings(html, city, propertyType) {
     // Chercher le contexte autour de l'URL
     var urlIndex = html.indexOf(url);
     if (urlIndex > 0) {
-      var context = html.substring(Math.max(0, urlIndex - 1000), Math.min(html.length, urlIndex + 2000));
+      var context = html.substring(Math.max(0, urlIndex - 2000), Math.min(html.length, urlIndex + 3000));
       
       // Prix - Extraction améliorée
       var priceRegex = /([\d,.]+)\s*t[yỷ]/gi;
@@ -181,29 +185,27 @@ function parseListings(html, city, propertyType) {
       bedroomMatch = bedroomRegex.exec(context);
       
       // Image - chercher les URLs amcdn.vn (CDN de Batdongsan)
-      var imageRegex = /https?:\/\/[^"'\s]*amcdn\.vn\/[^"'\s]+/gi;
+      var imageRegex = /https?:\/\/[^"'\s<>]*amcdn\.vn\/[^"'\s<>]+\.(?:jpg|jpeg|png|webp)/gi;
       var imageMatch = imageRegex.exec(context);
       if (imageMatch) {
         imageUrl = imageMatch[0];
-        // Nettoyer l'URL (enlever les caractères de fin non valides)
-        imageUrl = imageUrl.replace(/[&<>]/g, '');
       }
       
-      // Alternative : chercher data-src ou src avec image jpg/png/webp
+      // Alternative : chercher data-src ou src avec image
       if (!imageUrl) {
-        var imgSrcRegex = /(?:data-src|src)=["']([^"']*(?:\.jpg|\.jpeg|\.png|\.webp)[^"']*)["']/gi;
+        var imgSrcRegex = /(?:data-src|src)=["']([^"']*\.(?:jpg|jpeg|png|webp)[^"']*)["']/gi;
         var imgMatch = imgSrcRegex.exec(context);
-        if (imgMatch && imgMatch[1]) {
+        if (imgMatch && imgMatch[1] && !imgMatch[1].includes('logo') && !imgMatch[1].includes('icon')) {
           imageUrl = imgMatch[1];
         }
       }
       
-      // Autre pattern : URLs cloudinary ou autres CDN
+      // Pattern pour background-image: url(...)
       if (!imageUrl) {
-        var cdnRegex = /https?:\/\/[^"'\s]*(?:cloudinary|imgix|imagekit)[^"'\s]*\.(?:jpg|jpeg|png|webp)/gi;
-        var cdnMatch = cdnRegex.exec(context);
-        if (cdnMatch) {
-          imageUrl = cdnMatch[0];
+        var bgRegex = /background-image:\s*url\(['"]?([^'")\s]+\.(?:jpg|jpeg|png|webp)[^'")\s]*)['"]?\)/gi;
+        var bgMatch = bgRegex.exec(context);
+        if (bgMatch && bgMatch[1]) {
+          imageUrl = bgMatch[1];
         }
       }
     }
