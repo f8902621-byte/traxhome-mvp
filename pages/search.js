@@ -952,24 +952,7 @@ const availableSources = [
     </div>
   </div>
 )}
-                    {prop.imageUrl ? (
-                      <img 
-                        src={prop.imageUrl} 
-                        alt={prop.title} 
-                        className="w-full h-full object-cover"
-                        onError={(e) => { 
-                          e.target.onerror = null; 
-                          e.target.src = 'https://via.placeholder.com/400x300/0066cc/ffffff?text=BDS'; 
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600">
-                        <div className="text-center text-white">
-                          <div className="text-4xl mb-2">🏠</div>
-                          <div className="text-sm font-medium">{prop.source}</div>
-                        </div>
-                      </div>
-                    )}
+
                       {prop.isNew && <div className="absolute top-2 left-2 bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-xs font-bold animate-pulse">{t.newListing}</div>}
                       {prop.urgentKeywords && prop.urgentKeywords.length > 0 && (
                         <div className="absolute top-2 right-2 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
