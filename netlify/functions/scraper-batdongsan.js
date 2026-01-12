@@ -181,11 +181,15 @@ if (priceInDong2 > 100000000) {
         }
       }
       
-      // Si pas trouvé en JSON, essayer les patterns textuels
+// Si pas trouvé en JSON, chercher dans re__card-config-price
+      if (!priceMatch) {
+        var cardPriceRegex = /re__card-config-price[^>]*>([\d,]+)\s*t[yỷ]/gi;
+        priceMatch = cardPriceRegex.exec(context);
+      }
+      
+      // Fallback: patterns textuels génériques
       if (!priceMatch) {
         var pricePatterns = [
-          /([\d]+[,.][\d]+)\s*t[yỷ]/gi,
-          /([\d]+)\s*t[yỷ]/gi,
           />([\d]+[,.][\d]+)\s*t[yỷ]/gi,
           />([\d]+)\s*t[yỷ]/gi,
         ];
