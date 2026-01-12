@@ -149,9 +149,19 @@ function parseListings(html, city, propertyType) {
     if (urlIndex > 0) {
       var context = html.substring(Math.max(0, urlIndex - 2000), Math.min(html.length, urlIndex + 3000));
       
-      // Prix - Extraction améliorée
-      var priceRegex = /([\d,.]+)\s*t[yỷ]/gi;
-      priceMatch = priceRegex.exec(context);
+// Prix - Extraction améliorée avec plusieurs patterns
+      var pricePatterns = [
+        /([\d]+[,.][\d]+)\s*t[yỷ]/gi,      // 3,5 tỷ ou 3.5 tỷ
+        /([\d]+)\s*t[yỷ]/gi,                // 5 tỷ
+        /price[^>]*>([\d,.]+)\s*t/gi,       // dans balise price
+        />([\d]+[,.][\d]+)\s*t[yỷ]/gi,      // après une balise >3,5 tỷ
+        />([\d]+)\s*t[yỷ]/gi,               // après une balise >5 tỷ
+        /"price"[^:]*:\s*"?([\d,.]+)/gi,    // JSON price
+      ];
+      
+      for (var pi = 0; pi < pricePatterns.length && !priceMatch; pi++) {
+        priceMatch = pricePatterns[pi].exec(context);
+      }
       
       // Si pas trouvé, essayer dans l'URL (format "gia-X-Y-ty")
       if (!priceMatch) {
@@ -161,17 +171,16 @@ function parseListings(html, city, propertyType) {
       
       // Essayer les prix en triệu/tr
       if (!priceMatch) {
-        var trieuRegex = /([\d,.]+)\s*(?:trieu|triệu|tr)\b/gi;
-        priceMatch = trieuRegex.exec(context) || trieuRegex.exec(url);
-        if (priceMatch) {
-          isTrieu = true;
+        var trieuPatterns = [
+          /([\d]+)\s*(?:triệu|trieu|tr)\b/gi,
+          />([\d]+)\s*(?:triệu|trieu|tr)/gi,
+        ];
+        for (var ti = 0; ti < trieuPatterns.length && !priceMatch; ti++) {
+          priceMatch = trieuPatterns[ti].exec(context);
+          if (priceMatch) {
+            isTrieu = true;
+          }
         }
-      }
-      
-      // Si pas trouvé, essayer d'extraire depuis le titre/URL
-      if (!priceMatch) {
-        var titlePriceRegex = /gia[^\d]*([\d]+[\s,.]?[\d]*)\s*ty/gi;
-        priceMatch = titlePriceRegex.exec(url + ' ' + context);
       }
       
       // Surface
