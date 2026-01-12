@@ -149,21 +149,47 @@ function parseListings(html, city, propertyType) {
     if (urlIndex > 0) {
       var context = html.substring(Math.max(0, urlIndex - 2000), Math.min(html.length, urlIndex + 3000));
       
-// Prix - Extraction améliorée avec plusieurs patterns
-      var pricePatterns = [
-        /([\d]+[,.][\d]+)\s*t[yỷ]/gi,      // 3,5 tỷ ou 3.5 tỷ
-        /([\d]+)\s*t[yỷ]/gi,                // 5 tỷ
-        /price[^>]*>([\d,.]+)\s*t/gi,       // dans balise price
-        />([\d]+[,.][\d]+)\s*t[yỷ]/gi,      // après une balise >3,5 tỷ
-        />([\d]+)\s*t[yỷ]/gi,               // après une balise >5 tỷ
-        /"price"[^:]*:\s*"?([\d,.]+)/gi,    // JSON price
-      ];
-      
-      for (var pi = 0; pi < pricePatterns.length && !priceMatch; pi++) {
-        priceMatch = pricePatterns[pi].exec(context);
+// Prix - Extraction depuis JSON embarqué (méthode la plus fiable)
+      // Format: price: 1850000000,
+      var jsonPriceRegex = /price:\s*(\d{6,12}),/g;
+      var jsonMatch = jsonPriceRegex.exec(context);
+      if (jsonMatch) {
+        var priceInDong = parseInt(jsonMatch[1]);
+        if (priceInDong > 100000000) { // Plus de 100 millions = valide
+          listing.price = priceInDong;
+          listing.price_raw = (priceInDong / 1000000000).toFixed(2) + ' tỷ (JSON)';
+          priceMatch = true; // Flag pour sauter les autres méthodes
+        }
       }
       
-      // Si pas trouvé, essayer dans l'URL (format "gia-X-Y-ty")
+      // Si pas trouvé en JSON, essayer les patterns textuels
+      if (!priceMatch) {
+        var pricePatterns = [
+          /([\d]+[,.][\d]+)\s*t[yỷ]/gi,
+          /([\d]+)\s*t[yỷ]/gi,
+          />([\d]+[,.][\d]+)\s*t[yỷ]/gi,
+          />([\d]+)\s*t[yỷ]/gi,
+        ];
+        
+        for (var pi = 0; pi < pricePatterns.length && !priceMatch; pi++) {
+          priceMatch = pricePatterns[pi].exec(context);
+        }
+      }
+      
+      // Si pas trouvé, essayer dans l'URL (format "1ty750" = 1.75 tỷ)
+      if (!priceMatch) {
+        var urlPriceRegex2 = /(\d+)ty(\d+)/gi;
+        var urlMatch = urlPriceRegex2.exec(url);
+        if (urlMatch) {
+          var mainPart = urlMatch[1];
+          var decimalPart = urlMatch[2];
+          if (decimalPart.length === 3) decimalPart = decimalPart.substring(0, 2);
+          var combinedPrice = mainPart + '.' + decimalPart;
+          priceMatch = [combinedPrice + ' tỷ', combinedPrice];
+        }
+      }
+      
+      // Fallback: format simple dans l'URL
       if (!priceMatch) {
         var urlPriceRegex = /(\d+)[,-]?(\d*)\s*t[yỷ]/gi;
         priceMatch = urlPriceRegex.exec(url);
@@ -227,7 +253,7 @@ function parseListings(html, city, propertyType) {
       scraped_at: new Date().toISOString()
     };
     
-    if (priceMatch) {
+    if (priceMatch && !listing.price) {
       var priceValue = parseFloat(priceMatch[1].replace(',', '.'));
       if (isTrieu) {
         priceValue = priceValue / 1000; // Convertir triệu en tỷ
