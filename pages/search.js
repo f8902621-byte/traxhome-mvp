@@ -934,6 +934,7 @@ const availableSources = [
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {sortResults(results).map((prop) => (
                   <div key={prop.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
+                  <div className="relative h-48 bg-slate-200">
                    {prop.imageUrl ? (
   <img 
     src={prop.imageUrl} 
