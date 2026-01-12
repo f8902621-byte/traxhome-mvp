@@ -150,15 +150,34 @@ function parseListings(html, city, propertyType) {
       var context = html.substring(Math.max(0, urlIndex - 2000), Math.min(html.length, urlIndex + 3000));
       
 // Prix - Extraction depuis JSON embarqué (méthode la plus fiable)
-      // Format: price: 1850000000,
-      var jsonPriceRegex = /price:\s*(\d{6,12}),/g;
-      var jsonMatch = jsonPriceRegex.exec(context);
-      if (jsonMatch) {
-        var priceInDong = parseInt(jsonMatch[1]);
-        if (priceInDong > 100000000) { // Plus de 100 millions = valide
-          listing.price = priceInDong;
-          listing.price_raw = (priceInDong / 1000000000).toFixed(2) + ' tỷ (JSON)';
-          priceMatch = true; // Flag pour sauter les autres méthodes
+      // Chercher dans tout le HTML avec l'ID du produit
+      var productIdRegex = new RegExp('productId["\']?:\\s*' + id + '[,\\s]');
+      var productBlockStart = html.search(productIdRegex);
+      if (productBlockStart > 0) {
+        var productBlock = html.substring(productBlockStart, productBlockStart + 500);
+        var jsonPriceRegex = /price["\']?:\s*(\d{6,12})[,\s]/g;
+        var jsonMatch = jsonPriceRegex.exec(productBlock);
+        if (jsonMatch) {
+          var priceInDong = parseInt(jsonMatch[1]);
+          if (priceInDong > 100000000) {
+            listing.price = priceInDong;
+            listing.price_raw = (priceInDong / 1000000000).toFixed(2) + ' tỷ (JSON)';
+            priceMatch = true;
+          }
+        }
+      }
+      
+      // Fallback: chercher price: dans le contexte local
+      if (!priceMatch) {
+        var jsonPriceRegex2 = /price:\s*(\d{6,12}),/g;
+        var jsonMatch2 = jsonPriceRegex2.exec(context);
+        if (jsonMatch2) {
+          var priceInDong2 = parseInt(jsonMatch2[1]);
+          if (priceInDong2 > 100000000) {
+            listing.price = priceInDong2;
+            listing.price_raw = (priceInDong2 / 1000000000).toFixed(2) + ' tỷ (JSON)';
+            priceMatch = true;
+          }
         }
       }
       
