@@ -466,9 +466,15 @@ const availableSources = [
       setError(t.required);
       return;
     }
-    setLoading(true);
+setLoading(true);
     setError(null);
     setShowSearch(false);
+    // Reset BDS polling state
+    setBdsTaskId(null);
+    setBdsStatus('idle');
+    setBdsProgress(0);
+    setBdsCount(0);
+    
     try {
       const response = await fetch('/.netlify/functions/search', {
         method: 'POST',
@@ -479,6 +485,13 @@ const availableSources = [
       if (!response.ok) throw new Error(data.error || 'Search error');
       setResults(data.results || []);
       setStats(data.stats);
+      
+      // Lancer le polling BDS si taskId retourné
+      if (data.bdsTaskId) {
+        console.log('BDS: Démarrage polling pour', data.bdsTaskId);
+        setBdsTaskId(data.bdsTaskId);
+        setBdsStatus('polling');
+      }
     } catch (err) {
       setError(err.message);
     } finally {
