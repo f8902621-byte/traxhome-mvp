@@ -1507,7 +1507,7 @@ if (sources?.includes('chotot')) {
 // BATDONGSAN - avec timeout 25s (scrape pages de détail)
 if (sources?.includes('batdongsan')) {
   const timeoutPromise = new Promise((resolve) => 
-    setTimeout(() => resolve({ source: 'batdongsan', results: [], timeout: true }), 18000)
+    setTimeout(() => resolve({ source: 'batdongsan', results: [], timeout: true }), 22000)
   );
   const fetchPromise = fetchBatdongsan({ city, propertyType, priceMax })
     .then(results => ({ source: 'batdongsan', results }))
