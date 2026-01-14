@@ -15,6 +15,11 @@ const [showDbStats, setShowDbStats] = useState(false);
   const [statsCategory, setStatsCategory] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  // BDS Background Polling
+const [bdsTaskId, setBdsTaskId] = useState(null);
+const [bdsStatus, setBdsStatus] = useState('idle'); // idle, polling, completed, error
+const [bdsProgress, setBdsProgress] = useState(0);
+const [bdsCount, setBdsCount] = useState(0);
   const [expandedPhoto, setExpandedPhoto] = useState(null);
   const [sortBy, setSortBy] = useState('score');
   const [selectedProperty, setSelectedProperty] = useState(null);
@@ -72,6 +77,45 @@ useEffect(() => {
     setShowDbStats(true);
   }
 }, [results, statsCategory]);
+  // BDS Polling Effect
+useEffect(() => {
+  if (!bdsTaskId || bdsStatus !== 'polling') return;
+  
+  const pollInterval = setInterval(async () => {
+    try {
+      const response = await fetch(`/.netlify/functions/bds-status?taskId=${bdsTaskId}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setBdsProgress(data.progress || 0);
+        setBdsCount(data.listingsCount || 0);
+        
+        // Ajouter les nouvelles annonces BDS aux résultats
+        if (data.listings && data.listings.length > 0) {
+          setResults(prev => {
+            const existingIds = new Set(prev.map(r => r.id));
+            const newBds = data.listings.filter(l => !existingIds.has(l.id));
+            if (newBds.length > 0) {
+              console.log(`BDS: +${newBds.length} nouvelles annonces`);
+              return [...prev, ...newBds];
+            }
+            return prev;
+          });
+        }
+        
+        // Vérifier si terminé
+        if (data.status === 'completed' || data.status === 'error') {
+          setBdsStatus(data.status);
+          clearInterval(pollInterval);
+        }
+      }
+    } catch (err) {
+      console.error('BDS polling error:', err);
+    }
+  }, 5000); // Poll toutes les 5 secondes
+  
+  return () => clearInterval(pollInterval);
+}, [bdsTaskId, bdsStatus]);
 const loadDbStats = async (city = '', category = '') => {
   try {
     let url = '/.netlify/functions/stats?';
