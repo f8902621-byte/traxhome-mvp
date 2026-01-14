@@ -4,7 +4,7 @@
  */
 
 const SCRAPER_API_KEY = process.env.SCRAPER_API_KEY;
-const MAX_DETAIL_PAGES = 5; // Limite pour éviter timeout Netlify
+const MAX_DETAIL_PAGES = 2; // Limite pour éviter timeout Netlify
 
 // Mapping des villes
 const cityMapping = {
@@ -294,7 +294,7 @@ exports.handler = async function(event, context) {
         
         // Pause entre les requêtes pour éviter le rate limiting
         if (i < listingUrls.length - 1) {
-          await new Promise(function(r) { setTimeout(r, 500); });
+          await new Promise(function(r) { setTimeout(r, 200); });
         }
         
       } catch (e) {
