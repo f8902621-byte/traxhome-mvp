@@ -7,4 +7,12 @@
 
 [functions]
   node_bundler = "esbuild"
-  timeout = 60
+
+[functions."search"]
+  external_node_modules = []
+
+[functions."scraper-batdongsan"]
+  external_node_modules = []
+
+[functions."alonhadat"]
+  external_node_modules = []
