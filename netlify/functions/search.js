@@ -895,7 +895,7 @@ async function fetchBatdongsan(params) {
     console.log(`Batdongsan: ${urls.length} URLs trouvées`);
     
     // Étape 2: Scraper 1 page de détail (pour éviter timeout)
-    const MAX_DETAILS = 1;
+    const MAX_DETAILS = 2;
     const listings = [];
     
     for (let i = 0; i < Math.min(urls.length, MAX_DETAILS); i++) {
