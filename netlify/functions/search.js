@@ -1518,7 +1518,7 @@ if (sources?.includes('batdongsan')) {
 // ALONHADAT - avec timeout 15s
 if (sources?.includes('alonhadat')) {
   const timeoutPromise = new Promise((resolve) => 
-    setTimeout(() => resolve({ source: 'alonhadat', results: [], timeout: true }), 15000)
+    setTimeout(() => resolve({ source: 'alonhadat', results: [], timeout: true }), 45000)
   );
   const fetchPromise = fetchAlonhadat({ city, propertyType })
     .then(results => ({ source: 'alonhadat', results }))
