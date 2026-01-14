@@ -1520,6 +1520,51 @@ function analyzePricePosition(item, districtStats) {
 // ============================================
 // HANDLER PRINCIPAL
 // ============================================
+// ============================================
+// LANCER BDS EN ARRIÈRE-PLAN
+// ============================================
+async function launchBdsBackground(params) {
+  const { city, propertyType, priceMax } = params;
+  const taskId = `bds_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  console.log(`BDS: Lancement tâche background ${taskId}`);
+  
+  try {
+    const baseUrl = process.env.URL || 'https://ktrix-vn.netlify.app';
+    
+    // Fire-and-forget : on n'attend pas la réponse
+    fetch(`${baseUrl}/.netlify/functions/bds-background`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ taskId, city, propertyType, priceMax })
+    }).catch(err => console.log(`BDS background fire-and-forget: ${err.message}`));
+    
+    // Créer l'entrée initiale dans Supabase
+    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+      await fetch(`${SUPABASE_URL}/rest/v1/bds_tasks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({
+          id: taskId,
+          status: 'pending',
+          city,
+          property_type: propertyType,
+          created_at: new Date().toISOString()
+        })
+      });
+    }
+    
+    return { taskId, launched: true };
+  } catch (error) {
+    console.error('launchBdsBackground error:', error.message);
+    return { taskId: null, launched: false, error: error.message };
+  }
+}
 exports.handler = async (event) => {
   const headers = {
     'Content-Type': 'application/json',
@@ -1567,13 +1612,12 @@ if (sources?.includes('chotot')) {
   );
 }
 
-// BATDONGSAN - Scraping direct (pas de timeout car intégré)
+// BATDONGSAN - Lancer en arrière-plan (hybride)
+let bdsTaskId = null;
 if (sources?.includes('batdongsan')) {
-  sourcePromises.push(
-    fetchBatdongsan({ city, propertyType, priceMax })
-      .then(results => ({ source: 'batdongsan', results }))
-      .catch(e => { console.log(`Batdongsan erreur: ${e.message}`); return { source: 'batdongsan', results: [] }; })
-  );
+  const bdsLaunch = await launchBdsBackground({ city, propertyType, priceMax });
+  bdsTaskId = bdsLaunch.taskId;
+  console.log(`BDS: tâche ${bdsTaskId} lancée en arrière-plan`);
 }
 
 // ALONHADAT - avec timeout 15s
@@ -1753,13 +1797,9 @@ sortedResults = mixedResults;
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ success: true, results, stats, priceDrops })
+      body: JSON.stringify({ success: true, results, stats, priceDrops, bdsTaskId })
     };
-return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({ success: true, results, stats, priceDrops })
-    };
+
 
   } catch (error) {
     console.error('Error:', error);
