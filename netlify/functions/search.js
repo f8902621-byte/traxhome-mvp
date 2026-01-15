@@ -1613,11 +1613,15 @@ if (sources?.includes('chotot')) {
 }
 
 // BATDONGSAN - Lancer en arrière-plan (hybride)
+// Ne pas lancer si keywordsOnly car BDS ne supporte pas ce filtre
 let bdsTaskId = null;
-if (sources?.includes('batdongsan')) {
+if (sources?.includes('batdongsan') && !keywordsOnly) {
   const bdsLaunch = await launchBdsBackground({ city, propertyType, priceMax });
   bdsTaskId = bdsLaunch.taskId;
   console.log(`BDS: tâche ${bdsTaskId} lancée en arrière-plan`);
+}
+if (keywordsOnly && sources?.includes('batdongsan')) {
+  console.log('BDS: désactivé car keywordsOnly est activé');
 }
 
 // ALONHADAT - avec timeout 15s
