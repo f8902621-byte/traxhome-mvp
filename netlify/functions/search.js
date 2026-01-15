@@ -1696,12 +1696,12 @@ for (const { source, results, timeout } of sourceResults) {
     // Filtre keywordsOnly - ne garder que les annonces avec mots-clés urgents
     if (keywordsOnly) {
       const before = unique.length;
-// Toujours utiliser la liste complète optimisée (sans accents)
+// Liste de mots-clés urgents STRICTS (sans accents, espaces obligatoires)
       const keywordsToUse = [
-        'ban gap', 'ban nhanh', 'can ban', 'ket tien', 'can tien',
-        'gia re', 'ngop bank', 'chinh chu', 'mien trung gian',
-        'thuong luong', 'ban lo', 'cat lo', 'ha gia', 'thanh ly',
-        'gap', 'nhanh', 'lo', 're'
+        'ban gap', 'ban nhanh', 'can ban gap', 'can ban nhanh',
+        'ket tien', 'can tien', 'ngop bank', 'ngop ngan hang',
+        'gia re', 'chinh chu', 'mien trung gian',
+        'gia thuong luong', 'ban lo', 'cat lo', 'ha gia', 'thanh ly'
       ];
       
       console.log(`keywordsOnly: Checking ${unique.length} items against ${keywordsToUse.length} keywords`);
