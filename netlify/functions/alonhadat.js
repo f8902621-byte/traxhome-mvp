@@ -66,7 +66,7 @@ function buildAlonhadatUrl(params) {
  */
 async function scrapeWithScraperAPI(targetUrl) {
   return new Promise((resolve, reject) => {
-    const scraperUrl = `https://api.scraperapi.com/?api_key=${SCRAPER_API_KEY}&url=${encodeURIComponent(bdsUrl)}&country_code=vn&render=true`;
+    const scraperUrl = `https://api.scraperapi.com/?api_key=${SCRAPER_API_KEY}&url=${encodeURIComponent(targetUrl)}&country_code=vn&render=true`;
     
     console.log(`[Alonhadat] Scraping: ${targetUrl}`);
     
