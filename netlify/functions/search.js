@@ -1652,14 +1652,25 @@ const sourceResults = await Promise.all(sourcePromises);
 
 // Consolider les résultats
 let allResults = [];
+const typeMapping = getPropertyTypeMapping(propertyType);
+
 for (const { source, results, timeout } of sourceResults) {
   if (timeout) {
     console.log(`${source}: timeout`);
     continue;
   }
   if (results && results.length > 0) {
-    const filtered = applyFilters(results, { city, district, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, legalStatus });
-    console.log(`${source}: ${results.length} → ${filtered.length} après filtres`);
+    // Appliquer le filtrage par type de bien (include/exclude) pour TOUTES les sources
+    let typeFiltered = results;
+    if (typeMapping.include.length > 0 || typeMapping.exclude.length > 0) {
+      const beforeType = results.length;
+      typeFiltered = filterByKeywords(results, typeMapping.include, typeMapping.exclude);
+      console.log(`${source}: filtrage type ${beforeType} → ${typeFiltered.length}`);
+    }
+    
+    // Puis appliquer les autres filtres (prix, surface, etc.)
+    const filtered = applyFilters(typeFiltered, { city, district, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, legalStatus });
+    console.log(`${source}: ${results.length} → ${typeFiltered.length} (type) → ${filtered.length} (autres filtres)`);
     allResults.push(...filtered);
   }
 }
