@@ -1187,16 +1187,20 @@ function deduplicateResults(results) {
 const URGENT_KEYWORDS = [
   { pattern: /bán\s*gấp/i, weight: 25, label: 'Bán gấp' },
   { pattern: /cần\s*bán\s*gấp/i, weight: 25, label: 'Cần bán gấp' },
+  { pattern: /cần\s*bán\s*nhanh/i, weight: 20, label: 'Cần bán nhanh' },
+  { pattern: /cần\s*bán(?!\s*(gấp|nhanh))/i, weight: 15, label: 'Cần bán' },
   { pattern: /kẹt\s*tiền/i, weight: 25, label: 'Kẹt tiền' },
   { pattern: /cần\s*tiền/i, weight: 20, label: 'Cần tiền' },
   { pattern: /ngộp\s*bank/i, weight: 25, label: 'Ngộp bank' },
   { pattern: /thanh\s*lý/i, weight: 20, label: 'Thanh lý' },
   { pattern: /bán\s*lỗ/i, weight: 25, label: 'Bán lỗ' },
   { pattern: /giá\s*rẻ/i, weight: 15, label: 'Giá rẻ' },
+  { pattern: /giá\s*tốt/i, weight: 10, label: 'Giá tốt' },
   { pattern: /bán\s*nhanh/i, weight: 15, label: 'Bán nhanh' },
   { pattern: /chính\s*chủ/i, weight: 10, label: 'Chính chủ' },
   { pattern: /cắt\s*lỗ/i, weight: 25, label: 'Cắt lỗ' },
   { pattern: /hạ\s*giá/i, weight: 20, label: 'Hạ giá' },
+  { pattern: /lỗ\s*vốn/i, weight: 20, label: 'Lỗ vốn' },
 ];
 
 function calculateNegotiationScore(item, avgPricePerM2) {
