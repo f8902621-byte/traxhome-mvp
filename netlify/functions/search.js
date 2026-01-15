@@ -986,6 +986,7 @@ async function fetchBatdongsan(params) {
 // ============================================
 async function fetchAlonhadat(params) {
   const { city, propertyType } = params;
+  console.log(`[ALONHADAT DEBUG] city="${city}", propertyType="${propertyType}"`); 
   
   const cityMapping = {
     'ho chi minh': 'ho-chi-minh',
@@ -1000,21 +1001,24 @@ async function fetchAlonhadat(params) {
     'binh dinh': 'binh-dinh',
   };
   
-  const typeMapping = {
-    'can ho chung cu': 'can-ho-chung-cu',
-    'nha o': 'nha-dat',
-    'nha biet thu': 'biet-thu',
-    'biet thu': 'biet-thu',
-    'villa': 'biet-thu',
-    'dat': 'dat-nen',
-    'shophouse': 'shophouse',
-    'van phong': 'van-phong',
-    'kho nha xuong': 'nha-xuong-kho',
-  };
+const typeMapping = {
+  'can ho chung cu': 'can-ho-chung-cu',
+  'can ho': 'can-ho-chung-cu',           // AJOUTEZ
+  'chung cu': 'can-ho-chung-cu',         // AJOUTEZ
+  'apartment': 'can-ho-chung-cu',        // AJOUTEZ
+  'nha o': 'nha-dat',
+  'nha biet thu': 'biet-thu',
+  'biet thu': 'biet-thu',
+  'villa': 'biet-thu',
+  'dat': 'dat-nen',
+  'shophouse': 'shophouse',
+  'van phong': 'van-phong',
+  'kho nha xuong': 'nha-xuong-kho',
+};
   
   const cityNorm = removeVietnameseAccents(city || '').toLowerCase();
   const typeNorm = removeVietnameseAccents(propertyType || '').toLowerCase();
-  
+  console.log(`[ALONHADAT DEBUG] typeNorm="${typeNorm}", cityNorm="${cityNorm}"`);
   let citySlug = 'ho-chi-minh';
   for (const [key, value] of Object.entries(cityMapping)) {
     if (cityNorm.includes(key)) { citySlug = value; break; }
