@@ -123,7 +123,7 @@ export default function SearchPage() {
 
   const loadDbStats = async (city = '', category = '') => {
     try {
-      let url = '/api/functions/stats?';
+      let url = '/api/stats?';
       if (city) url += `city=${encodeURIComponent(city)}&`;
       if (category) url += `category=${encodeURIComponent(category)}`;
       const response = await fetch(url);
@@ -309,7 +309,7 @@ export default function SearchPage() {
     setSourceStats({});
     
     try {
-      const response = await fetch('/api/functions/search', {
+      const response = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(searchParams)
