@@ -211,6 +211,13 @@ async function scrapeDetailPage(urlInfo) {
       listing.area = parseInt(areaMatch[1]);
     }
     
+    // Fallback: extraire surface depuis le titre si pas trouvée
+    if (!listing.area && listing.title) {
+      const areaTitleMatch = listing.title.match(/(\d+[.,]?\d*)\s*m2/i);
+      if (areaTitleMatch) {
+        listing.area = parseFloat(areaTitleMatch[1].replace(',', '.'));
+      }
+    }
     // Chambres
     const bedroomMatch = html.match(/bedroom[s]?:\s*(\d+)/i) || html.match(/(\d+)\s*(?:PN|phòng ngủ)/i);
     if (bedroomMatch) {
