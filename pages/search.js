@@ -1029,7 +1029,7 @@ setLoading(true);
                       <h3 className="font-bold text-lg mb-2 line-clamp-2">{prop.title}</h3>
                       <div className="flex items-baseline gap-2 mb-2">
                         <p className="text-2xl font-bold text-sky-600">{formatPrice(prop.price)}</p>
-                        {prop.pricePerSqm > 1000000 && <p className="text-sm text-gray-500">{formatPrice(prop.pricePerSqm)}/m²</p>}
+                        {prop.pricePerSqm > 1000000 && <p className="text-sm text-gray-500">{Math.round(prop.pricePerSqm / 1000000)} tr/m²</p>}
                       </div>
                       <div className="mb-3">
                         <div className="flex justify-between mb-1">
