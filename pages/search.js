@@ -89,7 +89,7 @@ export default function SearchPage() {
     
     const pollInterval = setInterval(async () => {
       try {
-        const response = await fetch(`/.netlify/functions/bds-status?taskId=${bdsTaskId}`);
+        const response = await fetch(`/api/bds-status?taskId=${bdsTaskId}`);
         const data = await response.json();
         
         if (data.success) {
@@ -123,7 +123,7 @@ export default function SearchPage() {
 
   const loadDbStats = async (city = '', category = '') => {
     try {
-      let url = '/.netlify/functions/stats?';
+      let url = '/api/functions/stats?';
       if (city) url += `city=${encodeURIComponent(city)}&`;
       if (category) url += `category=${encodeURIComponent(category)}`;
       const response = await fetch(url);
@@ -309,7 +309,7 @@ export default function SearchPage() {
     setSourceStats({});
     
     try {
-      const response = await fetch('/.netlify/functions/search', {
+      const response = await fetch('/api/functions/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(searchParams)
