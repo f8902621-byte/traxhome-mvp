@@ -1537,7 +1537,9 @@ export default async function handler(req, res) {
       
       if (results && results.length > 0) {
         let typeFiltered = results;
-        if (typeMapping.include.length > 0 || typeMapping.exclude.length > 0) {
+        
+        // Only apply keyword filtering for Chotot (alonhadat/batdongsan are already filtered by URL)
+        if (source === 'chotot' && (typeMapping.include.length > 0 || typeMapping.exclude.length > 0)) {
           const beforeType = results.length;
           typeFiltered = filterByKeywords(results, typeMapping.include, typeMapping.exclude);
           console.log(`${source}: filtrage type ${beforeType} → ${typeFiltered.length}`);
