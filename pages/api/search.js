@@ -1,1027 +1,1827 @@
-import { useState, useEffect } from 'react';
-import { Search, Menu, Download, MapPin, AlertCircle, Loader, Home, Info, TrendingUp, TrendingDown, Minus, Database } from 'lucide-react';
-import { useRouter } from 'next/router';
+// ============================================
+// KTRIX - API SEARCH V4 (Vercel Compatible)
+// Version avec Market Stats + Archive Trends
+// ============================================
 
-export default function SearchPage() {
-  const router = useRouter();
-  const [language, setLanguage] = useState('vn');
-  const [currency, setCurrency] = useState('VND');
-  const [mode, setMode] = useState('buy');
-  const [showSearch, setShowSearch] = useState(true);
-  const [results, setResults] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [marketStats, setMarketStats] = useState([]);
-  const [showMarketStats, setShowMarketStats] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  
-  const [sourceStats, setSourceStats] = useState({});
-  const [bdsTaskId, setBdsTaskId] = useState(null);
-  const [bdsStatus, setBdsStatus] = useState('idle');
-  const [bdsProgress, setBdsProgress] = useState(0);
-  const [bdsCount, setBdsCount] = useState(0);
-  
-  const [expandedPhoto, setExpandedPhoto] = useState(null);
-  const [sortBy, setSortBy] = useState('score');
-  const [selectedProperty, setSelectedProperty] = useState(null);
-  const [savedSearches, setSavedSearches] = useState([]);
-  const [showSavedSearches, setShowSavedSearches] = useState(false);
-  
-  const [searchParams, setSearchParams] = useState({
-    city: '',
-    district: '',
-    propertyType: '',
-    priceMin: '',
-    priceMax: '',
-    livingAreaMin: '',
-    livingAreaMax: '',
-    bedrooms: '',
-    bathrooms: '',
-    hasParking: false,
-    hasPool: false,
-    streetWidthMin: '',
-    daysListed: '',
-    legalStatus: '',
-    customKeyword: '',
-    sources: ['chotot', 'alonhadat', 'batdongsan'],
-    keywords: [],
-    keywordsOnly: false,
-    numSites: 5
-  });
+const APIFY_API_TOKEN = process.env.APIFY_API_TOKEN;
+const APIFY_ACTOR_ID = process.env.APIFY_ACTOR_ID;
+const SCRAPER_API_KEY = process.env.SCRAPER_API_KEY;
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('ktrix_searches');
-      if (saved) setSavedSearches(JSON.parse(saved));
-    }
-  }, []);
+// ============================================
+// SUPABASE - STOCKAGE DES ANNONCES
+// ============================================
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
-  useEffect(() => {
-    if (router.query.lang && ['vn', 'en', 'fr'].includes(router.query.lang)) {
-      setLanguage(router.query.lang);
-    }
-  }, [router.query.lang]);
+// ============================================
+// RÉCUPÉRER LES STATS ARCHIVE PAR DISTRICT
+// ============================================
+async function getArchiveStatsByDistrict(city, propertyType) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.log('Archive stats: Supabase non configuré');
+    return {};
+  }
 
-  useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        setSelectedProperty(null);
-        setExpandedPhoto(null);
-      }
-    };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, []);
+  try {
+    // Construire la requête pour récupérer les annonces archivées
+    // On prend les annonces des 90 derniers jours pour avoir assez de données
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    const dateFilter = ninetyDaysAgo.toISOString().split('T')[0];
 
-  useEffect(() => {
-    if (!bdsTaskId || bdsStatus !== 'polling') return;
+    let url = `${SUPABASE_URL}/rest/v1/archive?select=district,price,area,price_per_m2,created_at&created_at=gte.${dateFilter}`;
     
-    const pollInterval = setInterval(async () => {
-      try {
-        const response = await fetch(\`/api/bds-status?taskId=\${bdsTaskId}\`);
-        const data = await response.json();
+    // Filtrer par ville si spécifiée
+    if (city) {
+      const cityNormalized = removeVietnameseAccents(city).toLowerCase();
+      url += `&city=ilike.*${encodeURIComponent(cityNormalized)}*`;
+    }
+
+    const response = await fetch(url, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+      }
+    });
+
+    if (!response.ok) {
+      console.log(`Archive stats: HTTP ${response.status}`);
+      return {};
+    }
+
+    const archiveData = await response.json();
+    console.log(`Archive: ${archiveData.length} annonces récupérées (90 derniers jours)`);
+
+    // Calculer les stats par district
+    const districtArchive = {};
+    
+    for (const item of archiveData) {
+      const district = (item.district || '').toLowerCase().trim();
+      if (!district) continue;
+
+      const price = item.price || 0;
+      const area = item.area || 0;
+      
+      if (price > 0 && area > 0) {
+        if (!districtArchive[district]) {
+          districtArchive[district] = {
+            count: 0,
+            pricesPerM2: [],
+            totalPrice: 0
+          };
+        }
         
-        if (data.success) {
-          setBdsProgress(data.progress || 0);
-          setBdsCount(data.listingsCount || 0);
-          
-          if (data.listings && data.listings.length > 0) {
-            setResults(prev => {
-              const existingIds = new Set(prev.map(r => r.id));
-              const newBds = data.listings.filter(l => !existingIds.has(l.id));
-              if (newBds.length > 0) {
-                console.log(\`BDS: +\${newBds.length} nouvelles annonces\`);
-                return [...prev, ...newBds];
-              }
-              return prev;
-            });
-          }
-          
-          if (data.status === 'completed' || data.status === 'error') {
-            setBdsStatus(data.status);
-            clearInterval(pollInterval);
+        const pricePerM2 = item.price_per_m2 || (price / area);
+        districtArchive[district].pricesPerM2.push(pricePerM2);
+        districtArchive[district].totalPrice += price;
+        districtArchive[district].count++;
+      }
+    }
+
+    // Calculer les moyennes
+    const archiveStats = {};
+    for (const [district, data] of Object.entries(districtArchive)) {
+      if (data.count >= 3) { // Minimum 3 annonces pour être fiable
+        const avgPricePerM2 = data.pricesPerM2.reduce((a, b) => a + b, 0) / data.count;
+        archiveStats[district] = {
+          count: data.count,
+          avgPricePerM2: Math.round(avgPricePerM2)
+        };
+      }
+    }
+
+    console.log(`Archive stats calculées: ${Object.keys(archiveStats).length} districts`);
+    return archiveStats;
+
+  } catch (error) {
+    console.error('Archive stats error:', error.message);
+    return {};
+  }
+}
+
+// ============================================
+// COMPTER TOUTES LES ANNONCES ARCHIVE PAR DISTRICT
+// ============================================
+async function getTotalArchiveByDistrict(city) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    return {};
+  }
+
+  try {
+    let url = `${SUPABASE_URL}/rest/v1/archive?select=district`;
+    
+    if (city) {
+      const cityNormalized = removeVietnameseAccents(city).toLowerCase();
+      url += `&city=ilike.*${encodeURIComponent(cityNormalized)}*`;
+    }
+
+    const response = await fetch(url, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+      }
+    });
+
+    if (!response.ok) return {};
+
+    const data = await response.json();
+    
+    // Compter par district
+    const counts = {};
+    for (const item of data) {
+      const district = (item.district || '').toLowerCase().trim();
+      if (district) {
+        counts[district] = (counts[district] || 0) + 1;
+      }
+    }
+
+    console.log(`Archive total: ${data.length} annonces, ${Object.keys(counts).length} districts`);
+    return counts;
+
+  } catch (error) {
+    console.error('Archive total error:', error.message);
+    return {};
+  }
+}
+
+async function saveListingsToSupabase(listings) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || listings.length === 0) {
+    return [];
+  }
+  
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const records = listings.map(item => ({
+      id: item.id,
+      source: item.source || 'unknown',
+      title: item.title || '',
+      price: item.price || 0,
+      area: item.floorArea || item.area || 0,
+      price_per_m2: item.pricePerSqm || 0,
+      district: item.district || '',
+      ward: item.ward || '',
+      city: item.city || '',
+      property_type: item.propertyType || '',
+      bedrooms: item.bedrooms || null,
+      bathrooms: item.bathrooms || null,
+      floors: item.floors || null,
+      street_width: item.streetWidth || null,
+      facade_width: item.facadeWidth || null,
+      legal_status: item.legalStatus || null,
+      direction: item.direction || null,
+      furnishing: item.furnishing || null,
+      url: item.url || '',
+      thumbnail: item.imageUrl || '',
+      last_seen: today,
+      negotiation_score: item.score || 0,
+      updated_at: new Date().toISOString()
+    }));
+    
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/listings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify(records)
+    });
+    
+    if (response.ok) {
+      console.log(`Supabase: ${records.length} annonces sauvegardées`);
+    } else {
+      const error = await response.text();
+      console.error('Supabase error:', error);
+    }
+    
+    return [];
+  } catch (error) {
+    console.error('Supabase save error:', error.message);
+    return [];
+  }
+}
+
+// ============================================
+// MAPPING DES VILLES → CODE RÉGION CHOTOT
+// ============================================
+const CHOTOT_REGIONS = {
+  'ho chi minh': '13000',
+  'ha noi': '12000',
+  'da nang': '3017',
+  'binh duong': '2011',
+  'khanh hoa': '7044',
+  'nha trang': '7044',
+  'can tho': '5027',
+  'hai phong': '4019',
+  'ba ria': '2010',
+  'vung tau': '2010',
+  'ba ria vung tau': '2010',
+  'quy nhon': '7043',
+  'binh dinh': '7043',
+  'lam dong': '9057',
+  'da lat': '9057',
+  'dalat': '9057',
+};
+
+// ============================================
+// MAPPING DES VILLES ALONHADAT
+// ============================================
+const ALONHADAT_CITY_MAPPING = {
+  'ho chi minh': 'ho-chi-minh',
+  'ha noi': 'ha-noi',
+  'da nang': 'da-nang',
+  'binh duong': 'binh-duong',
+  'khanh hoa': 'khanh-hoa',
+  'can tho': 'can-tho',
+  'hai phong': 'hai-phong',
+  'ba ria vung tau': 'ba-ria-vung-tau',
+  'lam dong': 'lam-dong',
+  'dong nai': 'dong-nai',
+  'quang ninh': 'quang-ninh',
+  'thanh hoa': 'thanh-hoa',
+  'nghe an': 'nghe-an',
+  'thua thien hue': 'thua-thien-hue',
+  'binh dinh': 'binh-dinh',
+  'quy nhon': 'binh-dinh',
+  'vung tau': 'ba-ria-vung-tau',
+};
+
+// ============================================
+// MAPPING DES VILLES BATDONGSAN
+// ============================================
+const BATDONGSAN_CITY_MAPPING = {
+  'ho chi minh': 'tp-hcm',
+  'ha noi': 'ha-noi',
+  'da nang': 'da-nang',
+  'binh duong': 'binh-duong',
+  'khanh hoa': 'khanh-hoa',
+  'can tho': 'can-tho',
+  'hai phong': 'hai-phong',
+  'ba ria vung tau': 'vung-tau-vt',
+  'lam dong': 'lam-dong',
+  'binh dinh': 'quy-nhon-bdd',
+  'quy nhon': 'quy-nhon-bdd',
+  'vung tau': 'vung-tau-vt',
+  'ba ria': 'vung-tau-vt',
+};
+
+// ============================================
+// MAPPING TYPE ALONHADAT
+// ============================================
+const ALONHADAT_PROPERTY_TYPE = {
+  'nha o': 'nha',
+  'can ho chung cu': 'can-ho-chung-cu',
+  'dat': 'dat-tho-cu-dat-o',
+  'biet thu': 'biet-thu-nha-lien-ke',
+  'nha biet thu': 'biet-thu-nha-lien-ke',
+  'villa': 'biet-thu-nha-lien-ke',
+  'kho nha xuong': 'kho-nha-xuong-dat-cong-nghiep',
+  'warehouse': 'kho-nha-xuong-dat-cong-nghiep',
+  'shophouse': 'shophouse-nha-pho-thuong-mai',
+};
+
+// ============================================
+// MAPPING TYPE BATDONGSAN
+// ============================================
+const BATDONGSAN_PROPERTY_TYPE = {
+  'can ho chung cu': 'ban-can-ho-chung-cu',
+  'nha biet thu': 'ban-nha-biet-thu-lien-ke',
+  'biet thu': 'ban-nha-biet-thu-lien-ke',
+  'villa': 'ban-nha-biet-thu-lien-ke',
+  'nha o': 'ban-nha-rieng',
+  'dat': 'ban-dat',
+  'shophouse': 'ban-shophouse-nha-pho-thuong-mai',
+  'kho nha xuong': 'ban-kho-nha-xuong',
+  'warehouse': 'ban-kho-nha-xuong',
+};
+
+// ============================================
+// MAPPING STATUT LÉGAL
+// ============================================
+const getLegalStatus = (code) => {
+  const legalMap = {
+    1: 'Sổ đỏ/Sổ hồng',
+    2: 'Hợp đồng mua bán',
+    3: 'Đang chờ sổ',
+  };
+  return legalMap[code] || null;
+};
+
+// ============================================
+// MAPPING DIRECTION
+// ============================================
+const getDirection = (code) => {
+  const directionMap = {
+    1: 'Đông',
+    2: 'Tây',
+    3: 'Nam',
+    4: 'Bắc',
+    5: 'Đông Bắc',
+    6: 'Đông Nam',
+    7: 'Tây Bắc',
+    8: 'Tây Nam',
+  };
+  return directionMap[code] || null;
+};
+
+// ============================================
+// MAPPING FURNISHING
+// ============================================
+const getFurnishing = (code) => {
+  const furnishingMap = {
+    1: 'Nội thất cao cấp',
+    2: 'Nội thất đầy đủ',
+    3: 'Nội thất cơ bản',
+    4: 'Bàn giao thô',
+  };
+  return furnishingMap[code] || null;
+};
+
+// ============================================
+// MAPPING CATÉGORIE CHOTOT → NOM TYPE
+// ============================================
+const getCategoryName = (categoryCode) => {
+  const categoryMap = {
+    1010: 'Căn hộ chung cư',
+    1020: 'Nhà ở',
+    1030: 'Văn phòng, Mặt bằng',
+    1040: 'Đất',
+    1000: 'Bất động sản',
+  };
+  return categoryMap[categoryCode] || null;
+};
+
+// ============================================
+// ANALYSE NLP DU TEXTE DES ANNONCES
+// ============================================
+function analyzeListingText(title, body) {
+  const text = ((title || '') + ' ' + (body || '')).toLowerCase();
+  const analysis = {
+    extractedStreetWidth: null,
+    extractedFloors: null,
+    extractedFacade: null,
+    extractedDirection: null,
+    extractedRentalIncome: null,
+    extractedPricePerM2: null,
+    hasMetroNearby: false,
+    hasNewRoad: false,
+    hasInvestmentPotential: false,
+    hasLegalIssue: false,
+    hasPlanningRisk: false,
+    detectedKeywords: []
+  };
+
+  const bodyText = (body || '').toLowerCase();
+  const titleText = (title || '').toLowerCase();
+  
+  const streetWidthPatterns = [
+    /hẻm\s+(?:xe\s+hơi\s+)?(?:[\w\s]*?(?:rộng|đều)\s+)?(\d+[,.]?\d*)\s*m(?!\s*²|²|\d)/i,
+    /ngõ\s+(?:rộng\s+)?(\d+[,.]?\d*)\s*m(?!\s*²|²|\d)/i,
+    /đường\s+(?:trước\s+)?(?:nhà\s+)?(?:hẻm\s+)?rộng\s+(\d+[,.]?\d*)\s*m(?!\s*²|²|\d)/i,
+    /xe\s+hơi[\w\s]*?(\d+[,.]?\d*)\s*m(?!\s*²|²|\d)/i,
+    /hẻm\s+(?:thông|bê\s*tông|betong)\s+(\d+[,.]?\d*)\s*m(?!\s*²|²|\d)/i,
+  ];
+  
+  let streetWidthFound = false;
+  
+  const hasMTContextBody = /\d\s*mt\b|\d\s*mặt\s*tiền/i.test(bodyText);
+  
+  if (!hasMTContextBody) {
+    for (const pattern of streetWidthPatterns) {
+      const match = bodyText.match(pattern);
+      if (match) {
+        const width = parseFloat(match[1].replace(',', '.'));
+        if (width >= 1 && width <= 15) {
+          analysis.extractedStreetWidth = width;
+          analysis.detectedKeywords.push(`Hẻm ${width}m`);
+          streetWidthFound = true;
+          break;
+        }
+      }
+    }
+  }
+  
+  if (!streetWidthFound) {
+    const hasMTContext = /\d\s*mt\b|\d\s*mặt\s*tiền/i.test(titleText);
+    
+    if (!hasMTContext) {
+      for (const pattern of streetWidthPatterns) {
+        const match = titleText.match(pattern);
+        if (match) {
+          const width = parseFloat(match[1].replace(',', '.'));
+          if (width >= 1 && width <= 15) {
+            analysis.extractedStreetWidth = width;
+            analysis.detectedKeywords.push(`Hẻm ${width}m`);
+            break;
           }
         }
-      } catch (err) {
-        console.error('BDS polling error:', err);
       }
-    }, 5000);
-    
-    return () => clearInterval(pollInterval);
-  }, [bdsTaskId, bdsStatus]);
-
-  const t = {
-    vn: {
-      menu: 'Menu', searchParams: 'Tham số Tìm kiếm', backToHome: 'Trang chủ',
-      city: 'Thành phố', district: 'Quận/Huyện', propertyType: 'Loại BDS',
-      priceMin: 'Giá tối thiểu', priceMax: 'Giá tối đa', livingArea: 'Diện tích (m²)',
-      bedrooms: 'Phòng ngủ', daysListed: 'Đăng trong (ngày)', legalStatus: 'Pháp lý',
-      legalAll: 'Tất cả', legalSoHong: 'Sổ đỏ/Sổ hồng', legalHopdong: 'Hợp đồng mua bán', legalDangcho: 'Đang chờ sổ',
-      customKeyword: 'Thêm từ khóa', customKeywordPlaceholder: 'Nhập từ khóa khác...',
-      sources: 'Nguồn dữ liệu', keywords: 'Từ khóa Khẩn cấp (QUAN TRỌNG)',
-      keywordsDesc: 'Những từ này cho thấy người bán gấp = cơ hội đàm phán tốt nhất!',
-      search: 'Tìm kiếm', results: 'Kết quả', score: 'Điểm phù hợp',
-      newListing: 'MỚI', urgentSale: 'GẤP', viewDetails: 'Xem chi tiết',
-      export: 'Xuất Excel', lowestPrice: 'Giá thấp nhất', highestPrice: 'Giá cao nhất',
-      loading: 'Đang tìm kiếm...', min: 'Tối thiểu', max: 'Tối đa',
-      required: 'Trường bắt buộc: Thành phố - Loại BDS - Giá tối đa',
-      selectCity: 'Chọn thành phố', selectDistrict: 'Chọn quận/huyện',
-      selectType: 'Chọn loại BDS', allDistricts: 'Tất cả quận/huyện',
-      buy: 'Mua', sell: 'Bán', sortScore: 'Điểm phù hợp',
-      sortPriceAsc: 'Giá tăng dần', sortPriceDesc: 'Giá giảm dần', sortDateDesc: 'Mới nhất',
-      close: 'Đóng', propertyDetails: 'Chi tiết BDS', postedOn: 'Ngày đăng',
-      rooms: 'Phòng ngủ', bathrooms: 'Phòng tắm', viewOriginal: 'Xem bài gốc',
-      saveSearch: 'Lưu tìm kiếm', savedSearches: 'Tìm kiếm đã lưu',
-      noSavedSearches: 'Chưa có tìm kiếm nào được lưu',
-      loadSearch: 'Tải', deleteSearch: 'Xóa', searchSaved: 'Đã lưu tìm kiếm!',
-      hasParking: 'Parking', hasPool: 'Hồ bơi', streetWidth: 'Đường rộng (m)',
-      noResults: 'Không tìm thấy kết quả',
-      comingSoon: 'Sắp ra mắt',
-      searchCriteria: 'Tiêu chí tìm kiếm',
-      sourceResults: 'Kết quả theo nguồn',
-      marketStats: 'Thống kê thị trường',
-      avgPrice: 'Giá TB/m²',
-      listings: 'Tin đăng',
-      archive: 'Lưu trữ',
-      trend: 'Xu hướng',
-    },
-    en: {
-      menu: 'Menu', searchParams: 'Search Parameters', backToHome: 'Home',
-      city: 'City', district: 'District', propertyType: 'Property Type',
-      priceMin: 'Min Price', priceMax: 'Max Price', livingArea: 'Living Area (m²)',
-      bedrooms: 'Bedrooms', daysListed: 'Listed within (days)', legalStatus: 'Legal Status',
-      legalAll: 'All', legalSoHong: 'Red/Pink Book', legalHopdong: 'Sales Contract', legalDangcho: 'Pending',
-      customKeyword: 'Add keyword', customKeywordPlaceholder: 'Enter custom keyword...',
-      sources: 'Data Sources', keywords: 'Urgent Keywords (IMPORTANT)',
-      keywordsDesc: 'These words indicate desperate sellers = best negotiation opportunity!',
-      search: 'Search', results: 'Results', score: 'Match Score',
-      newListing: 'NEW', urgentSale: 'URGENT', viewDetails: 'View Details',
-      export: 'Export Excel', lowestPrice: 'Lowest Price', highestPrice: 'Highest Price',
-      loading: 'Searching...', min: 'Min', max: 'Max',
-      required: 'Required: City - Property Type - Max Price',
-      selectCity: 'Select city', selectDistrict: 'Select district',
-      selectType: 'Select type', allDistricts: 'All districts',
-      buy: 'Buy', sell: 'Sell', sortScore: 'Match Score',
-      sortPriceAsc: 'Price: Low to High', sortPriceDesc: 'Price: High to Low', sortDateDesc: 'Newest First',
-      close: 'Close', propertyDetails: 'Property Details', postedOn: 'Posted on',
-      rooms: 'Bedrooms', bathrooms: 'Bathrooms', viewOriginal: 'View Original',
-      saveSearch: 'Save Search', savedSearches: 'Saved Searches',
-      noSavedSearches: 'No saved searches yet',
-      loadSearch: 'Load', deleteSearch: 'Delete', searchSaved: 'Search saved!',
-      hasParking: 'Parking', hasPool: 'Pool', streetWidth: 'Street min (m)',
-      noResults: 'No results found',
-      comingSoon: 'Coming soon',
-      searchCriteria: 'Search criteria',
-      sourceResults: 'Results by source',
-      marketStats: 'Market Statistics',
-      avgPrice: 'Avg price/m²',
-      listings: 'Listings',
-      archive: 'Archive',
-      trend: 'Trend',
-    },
-    fr: {
-      menu: 'Menu', searchParams: 'Paramètres', backToHome: 'Accueil',
-      city: 'Ville', district: 'District', propertyType: 'Type de Bien',
-      priceMin: 'Prix Min', priceMax: 'Prix Max', livingArea: 'Surface (m²)',
-      bedrooms: 'Chambres', daysListed: 'Publié depuis (jours)', legalStatus: 'Statut légal',
-      legalAll: 'Tous', legalSoHong: 'Sổ đỏ/Sổ hồng', legalHopdong: 'Contrat de vente', legalDangcho: 'En attente',
-      customKeyword: 'Ajouter mot-clé', customKeywordPlaceholder: 'Entrer un mot-clé...',
-      sources: 'Sources de données', keywords: 'Mots-clés Urgents (IMPORTANT)',
-      keywordsDesc: 'Ces mots indiquent un vendeur pressé = meilleure opportunité de négociation!',
-      search: 'Rechercher', results: 'Résultats', score: 'Score',
-      newListing: 'NOUVEAU', urgentSale: 'URGENT', viewDetails: 'Détails',
-      export: 'Exporter', lowestPrice: 'Prix Min', highestPrice: 'Prix Max',
-      loading: 'Recherche...', min: 'Min', max: 'Max',
-      required: 'Requis: Ville - Type - Prix Max',
-      selectCity: 'Choisir ville', selectDistrict: 'Choisir district',
-      selectType: 'Choisir type', allDistricts: 'Tous les districts',
-      buy: 'Achat', sell: 'Vente', sortScore: 'Score',
-      sortPriceAsc: 'Prix croissant', sortPriceDesc: 'Prix décroissant', sortDateDesc: 'Plus récent',
-      close: 'Fermer', propertyDetails: 'Détails du bien', postedOn: 'Publié le',
-      rooms: 'Chambres', bathrooms: 'Salle de bain', viewOriginal: 'Voir annonce originale',
-      saveSearch: 'Sauvegarder', savedSearches: 'Recherches sauvegardées',
-      noSavedSearches: 'Aucune recherche sauvegardée',
-      loadSearch: 'Charger', deleteSearch: 'Supprimer', searchSaved: 'Recherche sauvegardée!',
-      hasParking: 'Parking', hasPool: 'Piscine', streetWidth: 'Rue min (m)',
-      noResults: 'Aucun résultat trouvé',
-      comingSoon: 'Bientôt',
-      searchCriteria: 'Critères de recherche',
-      sourceResults: 'Résultats par source',
-      marketStats: 'Statistiques du marché',
-      avgPrice: 'Prix moy/m²',
-      listings: 'Annonces',
-      archive: 'Archive',
-      trend: 'Tendance',
     }
-  }[language];
+  }
 
-  const urgentKeywords = [
-    { vn: 'Bán gấp', en: 'Urgent Sale', fr: 'Vente Urgente' },
-    { vn: 'Bán nhanh', en: 'Quick Sale', fr: 'Vente Express' },
-    { vn: 'Cần bán nhanh', en: 'Need Quick Sale', fr: 'Doit Vendre Vite' },
-    { vn: 'Kẹt tiền', en: 'Need Money', fr: 'Besoin Argent' },
-    { vn: 'Cần tiền', en: 'Need Cash', fr: 'Besoin Cash' },
-    { vn: 'Giá rẻ', en: 'Cheap Price', fr: 'Prix Bas' },
-    { vn: 'Ngộp bank', en: 'Bank Pressure', fr: 'Pression Banque' },
-    { vn: 'Chính chủ', en: 'Direct Owner', fr: 'Propriétaire Direct' },
-    { vn: 'Miễn trung gian', en: 'No Agent', fr: 'Sans Intermédiaire' },
-    { vn: 'Giá thương lượng', en: 'Negotiable Price', fr: 'Prix Négociable' },
-    { vn: 'Bán lỗ', en: 'Selling at Loss', fr: 'Vente à Perte' }
+  const floorPatterns = [
+    /(\d+)\s*tầng/i,
+    /(\d+)\s*lầu/i,
+    /nhà\s*(\d+)\s*t(?:ầng|ang)/i,
   ];
+  for (const pattern of floorPatterns) {
+    const match = text.match(pattern);
+    if (match && parseInt(match[1]) <= 20) {
+      analysis.extractedFloors = parseInt(match[1]);
+      analysis.detectedKeywords.push(`${analysis.extractedFloors} tầng`);
+      break;
+    }
+  }
 
-  const propertyTypes = [
-    { vn: 'Tất cả nhà đất', en: 'All Properties', fr: 'Tous Biens', category: 'all' },
-    { vn: 'Căn hộ chung cư', en: 'Apartment', fr: 'Appartement', category: 'apartment' },
-    { vn: 'Căn hộ nghỉ dưỡng', en: 'Resort Condo', fr: 'Appart. Vacances', category: 'apartment' },
-    { vn: 'Studio', en: 'Studio', fr: 'Studio', category: 'apartment' },
-    { vn: 'Nhà ở', en: 'House', fr: 'Maison', category: 'house' },
-    { vn: 'Nhà biệt thự', en: 'Villa', fr: 'Villa', category: 'house' },
-    { vn: 'Nhà nghỉ dưỡng', en: 'Resort House', fr: 'Maison Vacances', category: 'house' },
-    { vn: 'Shophouse', en: 'Shophouse', fr: 'Shophouse', category: 'commercial' },
-    { vn: 'Văn phòng', en: 'Office', fr: 'Bureau', category: 'commercial' },
-    { vn: 'Cửa hàng', en: 'Shop', fr: 'Boutique', category: 'commercial' },
-    { vn: 'Mặt bằng', en: 'Premises', fr: 'Local commercial', category: 'commercial' },
-    { vn: 'Kho, nhà xưởng', en: 'Warehouse', fr: 'Entrepôt', category: 'commercial' },
-    { vn: 'Đất', en: 'Land', fr: 'Terrain', category: 'land' },
-    { vn: 'Đất nghỉ dưỡng', en: 'Resort Land', fr: 'Terrain Vacances', category: 'land' },
-    { vn: 'Bất động sản khác', en: 'Other Property', fr: 'Autre Bien', category: 'other' },
+  const facadePatterns = [
+    /mặt\s*tiền\s+(\d+[,.]?\d*)\s*m(?!\s*²|²|2|\d)/i,
+    /ngang\s+(\d+[,.]?\d*)\s*m(?!\s*²|²|2|\d)/i,
+    /(\d+[,.]?\d*)\s*m\s*x\s*\d+/i,
   ];
+  
+  for (const pattern of facadePatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      const facade = parseFloat(match[1].replace(',', '.'));
+      if (facade >= 2 && facade <= 30) {
+        analysis.extractedFacade = facade;
+        analysis.detectedKeywords.push(`MT ${facade}m`);
+        break;
+      }
+    }
+  }
 
-  const availableSources = [
-    { id: 'chotot', name: 'Chotot.com', active: true },
-    { id: 'alonhadat', name: 'Alonhadat.com.vn', active: true },
-    { id: 'batdongsan', name: 'Batdongsan.com.vn', active: true },
+  const directionPatterns = [
+    /hướng\s*(đông\s*nam|tây\s*nam|đông\s*bắc|tây\s*bắc|đông|tây|nam|bắc)/i,
+    /(đông\s*nam|tây\s*nam|đông\s*bắc|tây\s*bắc)\s*$/i,
   ];
+  for (const pattern of directionPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      analysis.extractedDirection = match[1].charAt(0).toUpperCase() + match[1].slice(1);
+      analysis.detectedKeywords.push(`Hướng ${analysis.extractedDirection}`);
+      break;
+    }
+  }
 
-  const vietnamCities = [
-    { vn: 'Hồ Chí Minh', en: 'Ho Chi Minh City', fr: 'Hô-Chi-Minh-Ville' },
-    { vn: 'Hà Nội', en: 'Hanoi', fr: 'Hanoï' },
-    { vn: 'Đà Nẵng', en: 'Da Nang', fr: 'Da Nang' },
-    { vn: 'Bình Dương', en: 'Binh Duong', fr: 'Binh Duong' },
-    { vn: 'Khánh Hòa', en: 'Khanh Hoa (Nha Trang)', fr: 'Khanh Hoa (Nha Trang)' },
-    { vn: 'Cần Thơ', en: 'Can Tho', fr: 'Can Tho' },
-    { vn: 'Hải Phòng', en: 'Hai Phong', fr: 'Hai Phong' },
-    { vn: 'Bà Rịa - Vũng Tàu', en: 'Ba Ria - Vung Tau', fr: 'Ba Ria - Vung Tau' },
-    { vn: 'Bình Định', en: 'Binh Dinh (Quy Nhon)', fr: 'Binh Dinh (Quy Nhon)' },
-    { vn: 'Lâm Đồng', en: 'Lam Dong (Da Lat)', fr: 'Lam Dong (Da Lat)' },
+  const rentalPatterns = [
+    /thu\s*nhập[^\d]*(\d+)[^\d]*(tr|triệu)/i,
+    /cho\s*thuê[^\d]*(\d+)[^\d]*(tr|triệu)/i,
+    /thuê[^\d]*(\d+)[^\d]*(tr|triệu)[^\d]*tháng/i,
   ];
+  for (const pattern of rentalPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      analysis.extractedRentalIncome = parseInt(match[1]) * 1000000;
+      analysis.detectedKeywords.push(`Thu nhập ${match[1]}tr/tháng`);
+      break;
+    }
+  }
 
-  const districtsByCity = {
-    'Hồ Chí Minh': ['Quận 1', 'Quận 2', 'Quận 3', 'Quận 7', 'Bình Thạnh', 'Gò Vấp', 'Phú Nhuận', 'Tân Bình', 'Thủ Đức'],
-    'Hà Nội': ['Ba Đình', 'Hoàn Kiếm', 'Hai Bà Trưng', 'Đống Đa', 'Tây Hồ', 'Cầu Giấy'],
-    'Đà Nẵng': ['Hải Châu', 'Thanh Khê', 'Sơn Trà', 'Ngũ Hành Sơn', 'Liên Chiểu'],
-    'Bình Dương': ['Thủ Dầu Một', 'Dĩ An', 'Thuận An'],
-    'Khánh Hòa': ['Nha Trang', 'Cam Ranh', 'Diên Khánh'],
-    'Cần Thơ': ['Ninh Kiều', 'Bình Thủy', 'Cái Răng'],
-    'Hải Phòng': ['Hồng Bàng', 'Lê Chân', 'Ngô Quyền', 'Đồ Sơn'],
-    'Bà Rịa - Vũng Tàu': ['Vũng Tàu', 'Bà Rịa', 'Long Điền', 'Phú Mỹ'],
-    'Bình Định': ['Quy Nhơn', 'An Nhơn', 'Hoài Nhơn', 'Tuy Phước', 'Phù Cát'],
-  };
+  const priceM2Patterns = [
+    /(\d+)[^\d]*(tr|triệu)[^\d]*m²/i,
+    /giá[^\d]*(\d+)[^\d]*(tr|triệu)\/m/i,
+  ];
+  for (const pattern of priceM2Patterns) {
+    const match = text.match(pattern);
+    if (match) {
+      analysis.extractedPricePerM2 = parseInt(match[1]) * 1000000;
+      analysis.detectedKeywords.push(`${match[1]}tr/m²`);
+      break;
+    }
+  }
 
-  const currentDistricts = districtsByCity[searchParams.city] || [];
+  if (/metro|tàu\s*điện/i.test(text)) {
+    analysis.hasMetroNearby = true;
+    analysis.detectedKeywords.push('🚇 Gần Metro');
+  }
+  if (/mở\s*đường|sắp\s*mở|đường\s*mới|quy\s*hoạch\s*đường/i.test(text)) {
+    analysis.hasNewRoad = true;
+    analysis.detectedKeywords.push('🛣️ Sắp mở đường');
+  }
+  if (/đầu\s*tư|sinh\s*lời|tăng\s*giá|tiềm\s*năng/i.test(text)) {
+    analysis.hasInvestmentPotential = true;
+    analysis.detectedKeywords.push('📈 Tiềm năng đầu tư');
+  }
 
-  const handleSearch = async () => {
-    if (!searchParams.city || !searchParams.propertyType || !searchParams.priceMax) {
-      setError(t.required);
-      return;
+  if (/chưa\s*(có\s*)?sổ|giấy\s*tay|không\s*sổ/i.test(text)) {
+    analysis.hasLegalIssue = true;
+    analysis.detectedKeywords.push('⚠️ Chưa có sổ');
+  }
+  if (/giải\s*tỏa|quy\s*hoạch\s*(treo|đỏ)|tranh\s*chấp/i.test(text)) {
+    analysis.hasPlanningRisk = true;
+    analysis.detectedKeywords.push('🚨 Rủi ro quy hoạch');
+  }
+
+  return analysis;
+}
+
+// ============================================
+// MAPPING UNIVERSEL DES TYPES DE BIENS
+// ============================================
+const PROPERTY_TYPE_MAPPING = {
+  'tat_ca': {
+    label: { vn: 'Tất cả nhà đất', en: 'All Properties', fr: 'Tous biens' },
+    chotot: 1000,
+    batdongsan: null,
+    include: [],
+    exclude: []
+  },
+  'can_ho_chung_cu': {
+    label: { vn: 'Căn hộ chung cư', en: 'Apartment', fr: 'Appartement' },
+    chotot: 1010,
+    batdongsan: 'ban-can-ho-chung-cu',
+    include: ['căn hộ', 'chung cư', 'apartment', 'cc'],
+    exclude: ['nghỉ dưỡng', 'condotel', 'resort', 'studio']
+  },
+  'can_ho_nghi_duong': {
+    label: { vn: 'Căn hộ nghỉ dưỡng', en: 'Resort Condo', fr: 'Appart. Vacances' },
+    chotot: 1010,
+    batdongsan: 'ban-can-ho-chung-cu',
+    include: ['nghỉ dưỡng', 'condotel', 'resort'],
+    exclude: []
+  },
+  'studio': {
+    label: { vn: 'Studio', en: 'Studio', fr: 'Studio' },
+    chotot: 1010,
+    batdongsan: 'ban-can-ho-chung-cu',
+    include: ['studio'],
+    exclude: []
+  },
+  'nha_o': {
+    label: { vn: 'Nhà ở', en: 'House', fr: 'Maison' },
+    chotot: 1020,
+    batdongsan: 'ban-nha-rieng',
+    include: ['nhà riêng', 'nhà ở', 'nhà phố'],
+    exclude: ['biệt thự', 'villa', 'nghỉ dưỡng', 'resort']
+  },
+  'nha_biet_thu': {
+    label: { vn: 'Nhà biệt thự', en: 'Villa', fr: 'Villa' },
+    chotot: 1020,
+    batdongsan: 'ban-nha-biet-thu-lien-ke',
+    include: ['biệt thự', 'villa', 'liền kề'],
+    exclude: ['nghỉ dưỡng', 'resort']
+  },
+  'nha_nghi_duong': {
+    label: { vn: 'Nhà nghỉ dưỡng', en: 'Resort House', fr: 'Maison Vacances' },
+    chotot: 1020,
+    batdongsan: 'ban-nha-rieng',
+    include: ['nghỉ dưỡng', 'resort'],
+    exclude: []
+  },
+  'shophouse': {
+    label: { vn: 'Shophouse', en: 'Shophouse', fr: 'Shophouse' },
+    chotot: 1030,
+    batdongsan: 'ban-shophouse-nha-pho-thuong-mai',
+    include: ['shophouse', 'nhà phố thương mại'],
+    exclude: []
+  },
+  'van_phong': {
+    label: { vn: 'Văn phòng', en: 'Office', fr: 'Bureau' },
+    chotot: 1030,
+    batdongsan: null,
+    include: ['văn phòng', 'office', 'officetel'],
+    exclude: []
+  },
+  'cua_hang': {
+    label: { vn: 'Cửa hàng', en: 'Shop', fr: 'Boutique' },
+    chotot: 1030,
+    batdongsan: 'ban-shophouse-nha-pho-thuong-mai',
+    include: ['cửa hàng', 'shop', 'ki ốt', 'kiot'],
+    exclude: []
+  },
+  'mat_bang': {
+    label: { vn: 'Mặt bằng', en: 'Premises', fr: 'Local commercial' },
+    chotot: 1030,
+    batdongsan: 'ban-shophouse-nha-pho-thuong-mai',
+    include: ['mặt bằng', 'mặt tiền'],
+    exclude: ['shophouse', 'văn phòng', 'kho']
+  },
+  'kho_nha_xuong': {
+    label: { vn: 'Kho, nhà xưởng', en: 'Warehouse', fr: 'Entrepôt' },
+    chotot: 1030,
+    batdongsan: 'ban-kho-nha-xuong',
+    include: ['kho', 'nhà xưởng', 'xưởng', 'warehouse'],
+    exclude: []
+  },
+  'dat': {
+    label: { vn: 'Đất', en: 'Land', fr: 'Terrain' },
+    chotot: 1040,
+    batdongsan: 'ban-dat-dat-nen',
+    include: ['đất', 'đất nền', 'lô đất'],
+    exclude: ['nghỉ dưỡng', 'resort']
+  },
+  'dat_nghi_duong': {
+    label: { vn: 'Đất nghỉ dưỡng', en: 'Resort Land', fr: 'Terrain Vacances' },
+    chotot: 1040,
+    batdongsan: 'ban-dat-dat-nen',
+    include: ['nghỉ dưỡng', 'resort'],
+    exclude: []
+  },
+  'bat_dong_san_khac': {
+    label: { vn: 'Bất động sản khác', en: 'Other', fr: 'Autre bien' },
+    chotot: 1000,
+    batdongsan: null,
+    include: [],
+    exclude: []
+  }
+};
+
+function getPropertyTypeMapping(userInput) {
+  if (!userInput) return PROPERTY_TYPE_MAPPING['tat_ca'];
+  
+  const input = removeVietnameseAccents(userInput.toLowerCase());
+  
+  if (input.includes('shophouse')) {
+    return PROPERTY_TYPE_MAPPING['shophouse'];
+  }
+  if (input.includes('office') || input.includes('officetel') || input.includes('van phong')) {
+    return PROPERTY_TYPE_MAPPING['van_phong'];
+  }
+  if (input.includes('studio')) {
+    return PROPERTY_TYPE_MAPPING['studio'];
+  }
+  if (input.includes('villa') || input.includes('biet thu')) {
+    return PROPERTY_TYPE_MAPPING['nha_biet_thu'];
+  }
+  if (input.includes('warehouse') || input.includes('kho') || input.includes('xuong')) {
+    return PROPERTY_TYPE_MAPPING['kho_nha_xuong'];
+  }
+  if (input.includes('premises') || input.includes('mat bang')) {
+    return PROPERTY_TYPE_MAPPING['mat_bang'];
+  }
+  if (input.includes('shop') || input.includes('cua hang') || input.includes('kiot')) {
+    return PROPERTY_TYPE_MAPPING['cua_hang'];
+  }
+  if (input.includes('resort') || input.includes('nghi duong')) {
+    if (input.includes('can ho') || input.includes('apartment')) {
+      return PROPERTY_TYPE_MAPPING['can_ho_nghi_duong'];
+    }
+    if (input.includes('dat') || input.includes('land')) {
+      return PROPERTY_TYPE_MAPPING['dat_nghi_duong'];
+    }
+    return PROPERTY_TYPE_MAPPING['nha_nghi_duong'];
+  }
+  
+  for (const [key, mapping] of Object.entries(PROPERTY_TYPE_MAPPING)) {
+    const labelVn = removeVietnameseAccents(mapping.label.vn.toLowerCase());
+    const labelEn = mapping.label.en.toLowerCase();
+    const labelFr = mapping.label.fr.toLowerCase();
+    
+    if (input.includes(labelVn) || labelVn.includes(input) ||
+        input.includes(labelEn) || labelEn.includes(input) ||
+        input.includes(labelFr) || labelFr.includes(input)) {
+      return mapping;
     }
     
-    setLoading(true);
-    setError(null);
-    setShowSearch(false);
-    setBdsTaskId(null);
-    setBdsStatus('idle');
-    setBdsProgress(0);
-    setBdsCount(0);
-    setSourceStats({});
-    setMarketStats([]);
+    for (const kw of mapping.include) {
+      if (input.includes(removeVietnameseAccents(kw))) {
+        return mapping;
+      }
+    }
+  }
+  
+  if (input.includes('can ho') || input.includes('chung cu') || input.includes('apartment')) {
+    return PROPERTY_TYPE_MAPPING['can_ho_chung_cu'];
+  }
+  if (input.includes('biet thu') || input.includes('villa')) {
+    return PROPERTY_TYPE_MAPPING['nha_biet_thu'];
+  }
+  if (input.includes('nha') && !input.includes('biet thu') && !input.includes('nghi duong')) {
+    return PROPERTY_TYPE_MAPPING['nha_o'];
+  }
+  if (input.includes('dat') && !input.includes('nghi duong')) {
+    return PROPERTY_TYPE_MAPPING['dat'];
+  }
+  if (input.includes('nghi duong') || input.includes('resort')) {
+    if (input.includes('can ho')) return PROPERTY_TYPE_MAPPING['can_ho_nghi_duong'];
+    if (input.includes('dat')) return PROPERTY_TYPE_MAPPING['dat_nghi_duong'];
+    return PROPERTY_TYPE_MAPPING['nha_nghi_duong'];
+  }
+  
+  return PROPERTY_TYPE_MAPPING['tat_ca'];
+}
+
+function removeVietnameseAccents(str) {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'd')
+    .toLowerCase()
+    .trim();
+}
+
+function getChototRegion(city) {
+  if (!city) return '13000';
+  
+  const cityNormalized = removeVietnameseAccents(city);
+  console.log(`City mapping: "${city}" → normalized: "${cityNormalized}"`);
+  
+  for (const [cityName, code] of Object.entries(CHOTOT_REGIONS)) {
+    if (cityNormalized.includes(cityName) || cityName.includes(cityNormalized)) {
+      console.log(`City matched: "${cityName}" → code ${code}`);
+      return code;
+    }
+  }
+  
+  if (cityNormalized.includes('sai gon') || cityNormalized.includes('saigon') || cityNormalized.includes('hcm') || cityNormalized.includes('tphcm')) {
+    return '13000';
+  }
+  if (cityNormalized.includes('hanoi') || cityNormalized.includes('hn')) {
+    return '12000';
+  }
+  if (cityNormalized.includes('danang') || cityNormalized.includes('dn')) {
+    return '3017';
+  }
+  if (cityNormalized.includes('nha trang')) {
+    return '7044';
+  }
+  if (cityNormalized.includes('da lat') || cityNormalized.includes('dalat')) {
+    return '15200';
+  }
+  
+  console.log(`City not found, defaulting to HCM (13000)`);
+  return '13000';
+}
+
+// ============================================
+// CHOTOT API
+// ============================================
+async function fetchChotot(params) {
+  const { city, priceMin, priceMax, sortBy, propertyType } = params;
+  
+  const regionCode = getChototRegion(city);
+  const typeMapping = getPropertyTypeMapping(propertyType);
+  
+  console.log(`Chotot: ville="${city}" → region=${regionCode}, type="${propertyType}" → code=${typeMapping.chotot}`);
+  
+  const baseParams = new URLSearchParams();
+  baseParams.append('cg', typeMapping.chotot.toString());
+  baseParams.append('region_v2', regionCode);
+  baseParams.append('st', 's,k');
+  baseParams.append('limit', '50');
+  
+  if (priceMin || priceMax) {
+    const minPrice = priceMin ? Math.round(parseFloat(priceMin) * 1000000000) : 0;
+    const maxPrice = priceMax ? Math.round(parseFloat(priceMax) * 1000000000) : 999999999999;
+    baseParams.append('price', `${minPrice}-${maxPrice}`);
+  }
+  
+  if (sortBy === 'price_asc') {
+    baseParams.append('sort_by', 'price');
+    baseParams.append('sort_dir', 'asc');
+  } else if (sortBy === 'price_desc') {
+    baseParams.append('sort_by', 'price');
+    baseParams.append('sort_dir', 'desc');
+  }
+  
+  const allAds = [];
+  const offsets = [0, 50, 100, 150, 200, 250];
+  
+  for (const offset of offsets) {
+    try {
+      const url = `https://gateway.chotot.com/v1/public/ad-listing?${baseParams}&o=${offset}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.ads && data.ads.length > 0) {
+        allAds.push(...data.ads);
+        console.log(`Chotot offset=${offset}: +${data.ads.length} (total API: ${data.total})`);
+      } else {
+        break;
+      }
+    } catch (error) {
+      console.error(`Chotot error offset=${offset}:`, error.message);
+    }
+  }
+  
+  console.log(`Chotot TOTAL brut: ${allAds.length} annonces`);
+  
+  let results = allAds
+    .filter(ad => ad.price && ad.price > 0)
+    .map(ad => {
+      const nlpAnalysis = analyzeListingText(ad.subject, ad.body);
+      const propertyType = getCategoryName(ad.category) || ad.category_name || '';
+      return {
+        id: `chotot_${ad.list_id}`,
+        title: ad.subject || 'Không có tiêu đề',
+        body: ad.body || '',
+        price: ad.price || 0,
+        floorAreaSqm: ad.size || ad.area || 0,
+        area: ad.size || ad.area || 0,
+        address: [ad.street_name, ad.ward_name, ad.area_name].filter(Boolean).join(', ') || '',
+        street: ad.street_name || '',
+        ward: ad.ward_name || '',
+        district: ad.area_name || '',
+        city: ad.region_name || '',
+        bedrooms: ad.rooms || null,
+        bathrooms: ad.toilets || null,
+        thumbnail: ad.image || ad.images?.[0] || '',
+        images: ad.images || (ad.image ? [ad.image] : []),
+        url: `https://www.chotot.com/${ad.list_id}.htm`,
+        source: 'chotot.com',
+        postedOn: ad.list_time ? new Date(ad.list_time > 10000000000 ? ad.list_time : ad.list_time * 1000).toLocaleDateString('vi-VN') : '',
+        list_time: ad.list_time || 0,
+        category: ad.category || null,
+        propertyType: propertyType || ad.category_name || '',
+        pricePerM2: ad.price_million_per_m2 || null,
+        legalStatus: ad.property_legal_document ? getLegalStatus(ad.property_legal_document) : null,
+        direction: ad.direction ? getDirection(ad.direction) : nlpAnalysis.extractedDirection,
+        floors: ad.floors || nlpAnalysis.extractedFloors,
+        streetWidth: ad.street_width || nlpAnalysis.extractedStreetWidth,
+        facadeWidth: ad.facade_width || nlpAnalysis.extractedFacade,
+        furnishing: ad.furnishing_sell ? getFurnishing(ad.furnishing_sell) : null,
+        nlpAnalysis: nlpAnalysis,
+        extractedRentalIncome: nlpAnalysis.extractedRentalIncome,
+        hasMetroNearby: nlpAnalysis.hasMetroNearby,
+        hasNewRoad: nlpAnalysis.hasNewRoad,
+        hasInvestmentPotential: nlpAnalysis.hasInvestmentPotential,
+        hasLegalIssue: nlpAnalysis.hasLegalIssue,
+        hasPlanningRisk: nlpAnalysis.hasPlanningRisk,
+        detectedKeywords: nlpAnalysis.detectedKeywords,
+      };
+    });
+  
+  if (typeMapping.include.length > 0 || typeMapping.exclude.length > 0) {
+    const beforeFilter = results.length;
+    results = filterByKeywords(results, typeMapping.include, typeMapping.exclude);
+    console.log(`Chotot filtre mots-clés: ${beforeFilter} → ${results.length}`);
+  }
+
+  return results;
+}
+
+// ============================================
+// ALONHADAT SCRAPER
+// ============================================
+async function fetchAlonhadat(params) {
+  const { city, propertyType, priceMax } = params;
+  
+  if (!SCRAPER_API_KEY) {
+    console.log('Alonhadat: SCRAPER_API_KEY non configuré, skip');
+    return [];
+  }
+  
+  const cityNormalized = removeVietnameseAccents(city || 'ho chi minh');
+  const typeNormalized = removeVietnameseAccents(propertyType || 'nha o');
+  
+  // Mapping ville
+  let citySlug = 'ho-chi-minh';
+  for (const [key, value] of Object.entries(ALONHADAT_CITY_MAPPING)) {
+    if (cityNormalized.includes(key) || key.includes(cityNormalized)) {
+      citySlug = value;
+      break;
+    }
+  }
+  
+  // Mapping type
+  let typeSlug = 'nha';
+  for (const [key, value] of Object.entries(ALONHADAT_PROPERTY_TYPE)) {
+    if (typeNormalized.includes(key) || key.includes(typeNormalized)) {
+      typeSlug = value;
+      break;
+    }
+  }
+  
+  const targetUrl = `https://alonhadat.com.vn/can-ban-${typeSlug}/${citySlug}`;
+  const scraperUrl = `https://api.scraperapi.com/?api_key=${SCRAPER_API_KEY}&url=${encodeURIComponent(targetUrl)}&render=true`;
+  
+  console.log(`Alonhadat: scraping ${targetUrl}`);
+  
+  try {
+    const response = await fetch(scraperUrl);
+    if (!response.ok) {
+      console.log(`Alonhadat: HTTP ${response.status}`);
+      return [];
+    }
+    
+    const html = await response.text();
+    console.log(`Alonhadat: reçu ${(html.length/1024).toFixed(1)}KB`);
+    
+    // Parser les annonces
+    const listings = parseAlonhadatHtml(html, city);
+    console.log(`Alonhadat: ${listings.length} annonces parsées`);
+    
+    return listings;
+  } catch (error) {
+    console.log(`Alonhadat erreur: ${error.message}`);
+    return [];
+  }
+}
+
+function parseAlonhadatHtml(html, city) {
+  const listings = [];
+  
+  // Regex pour extraire les articles
+  const articleRegex = /<article\s+class=["']property-item["'][^>]*>([\s\S]*?)<\/article>/gi;
+  let match;
+  
+  while ((match = articleRegex.exec(html)) !== null) {
+    const articleHtml = match[1];
     
     try {
-      const response = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(searchParams)
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Search error');
+      const listing = {};
       
-      setResults(data.results || []);
-      setStats(data.stats);
-      
-      if (data.marketStats && data.marketStats.length > 0) {
-        setMarketStats(data.marketStats);
+      // URL et ID
+      const urlMatch = articleHtml.match(/href=["']([^"']*\.html)["']/i);
+      if (urlMatch) {
+        const href = urlMatch[1];
+        listing.url = href.startsWith('http') ? href : `https://alonhadat.com.vn${href}`;
+        const memberIdMatch = articleHtml.match(/data-memberid=["'](\d+)["']/i);
+        listing.id = memberIdMatch ? `alonhadat_${memberIdMatch[1]}` : `alonhadat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       }
       
-      if (data.results && data.results.length > 0) {
-        const statsBySource = {};
-        data.results.forEach(result => {
-          const source = result.source || 'unknown';
-          if (!statsBySource[source]) {
-            statsBySource[source] = 0;
-          }
-          statsBySource[source]++;
-        });
-        setSourceStats(statsBySource);
-      }
+      // Titre
+      const titleMatch = articleHtml.match(/itemprop=["']name["'][^>]*>([^<]+)</i) ||
+                         articleHtml.match(/<h3[^>]*>([^<]+)</i);
+      listing.title = titleMatch ? titleMatch[1].trim() : 'Sans titre';
       
-      if (data.bdsTaskId) {
-        console.log('BDS: Démarrage polling pour', data.bdsTaskId);
-        setBdsTaskId(data.bdsTaskId);
-        setBdsStatus('polling');
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatPrice = (price) => {
-    if (!price) return '-';
-    if (currency === 'VND') {
-      return \`\${(price / 1000000000).toFixed(1).replace('.', ',')} Tỷ\`;
-    }
-    return \`$\${(price / 25000).toFixed(0).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',')}\`;
-  };
-
-  const formatPricePerM2 = (price) => {
-    if (!price) return '-';
-    return \`\${Math.round(price / 1000000)} tr/m²\`;
-  };
-
-  const toggleKeyword = (keyword) => {
-    const kw = keyword[language];
-    setSearchParams(prev => ({
-      ...prev,
-      keywords: prev.keywords.includes(kw) ? prev.keywords.filter(k => k !== kw) : [...prev.keywords, kw]
-    }));
-  };
-
-  const exportToExcel = () => {
-    const headers = ['Titre', 'Prix', 'Ville', 'Surface', 'Chambres', 'Score', 'Source'];
-    const rows = results.map(r => [r.title, r.price, r.city, r.floorArea, r.bedrooms, r.score, r.source]);
-    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = \`ktrix_\${new Date().toISOString().slice(0,10)}.csv\`;
-    a.click();
-  };
-
-  const saveCurrentSearch = () => {
-    const searchName = \`\${searchParams.city} - \${searchParams.propertyType}\`;
-    const newSearch = { id: Date.now(), name: searchName, params: { ...searchParams }, date: new Date().toLocaleDateString() };
-    const updated = [...savedSearches, newSearch];
-    setSavedSearches(updated);
-    if (typeof window !== 'undefined') localStorage.setItem('ktrix_searches', JSON.stringify(updated));
-    alert(t.searchSaved);
-  };
-
-  const sortResults = (res) => {
-    const sorted = [...res];
-    switch (sortBy) {
-      case 'priceAsc': return sorted.sort((a, b) => a.price - b.price);
-      case 'priceDesc': return sorted.sort((a, b) => b.price - a.price);
-      default: return sorted.sort((a, b) => b.score - a.score);
-    }
-  };
-
-  const getPropertyTypesByCategory = () => {
-    const categories = {
-      all: propertyTypes.filter(pt => pt.category === 'all'),
-      apartment: propertyTypes.filter(pt => pt.category === 'apartment'),
-      house: propertyTypes.filter(pt => pt.category === 'house'),
-      commercial: propertyTypes.filter(pt => pt.category === 'commercial'),
-      land: propertyTypes.filter(pt => pt.category === 'land'),
-      other: propertyTypes.filter(pt => pt.category === 'other'),
-    };
-    return categories;
-  };
-
-  const getSearchCriteriaSummary = () => {
-    const criteria = [];
-    if (searchParams.city) criteria.push(\`\${t.city}: \${searchParams.city}\`);
-    if (searchParams.district) criteria.push(\`\${t.district}: \${searchParams.district}\`);
-    if (searchParams.propertyType) criteria.push(\`\${t.propertyType}: \${searchParams.propertyType}\`);
-    if (searchParams.priceMin || searchParams.priceMax) {
-      const priceRange = \`\${searchParams.priceMin || '0'} - \${searchParams.priceMax || '∞'} Tỷ\`;
-      criteria.push(\`Prix: \${priceRange}\`);
-    }
-    if (searchParams.bedrooms) criteria.push(\`\${t.bedrooms}: \${searchParams.bedrooms}\`);
-    if (searchParams.keywords.length > 0) criteria.push(\`Mots-clés: \${searchParams.keywords.slice(0, 3).join(', ')}\${searchParams.keywords.length > 3 ? '...' : ''}\`);
-    if (searchParams.sources.length < 3) criteria.push(\`Sources: \${searchParams.sources.join(', ')}\`);
-    return criteria;
-  };
-
-  // ============================================
-  // COMPOSANT MARKET STATS AVEC ARCHIVE ET TRENDS
-  // ============================================
-  const MarketStatsTable = ({ data }) => {
-    if (!data || data.length === 0) return null;
-    
-    const getTrendIcon = (trend, trendPercent) => {
-      if (!trend) return <span className="text-gray-400">—</span>;
-      
-      if (trend === 'up') {
-        return (
-          <span className="flex items-center gap-1 text-red-500 font-semibold">
-            <TrendingUp className="w-4 h-4" />
-            +{trendPercent}%
-          </span>
-        );
-      } else if (trend === 'down') {
-        return (
-          <span className="flex items-center gap-1 text-green-500 font-semibold">
-            <TrendingDown className="w-4 h-4" />
-            {trendPercent}%
-          </span>
-        );
+      // Prix
+      const priceMatch = articleHtml.match(/itemprop=["']price["']\s+content=["'](\d+)["']/i);
+      if (priceMatch) {
+        listing.price = parseInt(priceMatch[1]);
       } else {
-        return (
-          <span className="flex items-center gap-1 text-gray-500">
-            <Minus className="w-4 h-4" />
-            0%
-          </span>
-        );
+        const priceTextMatch = articleHtml.match(/([\d,\.]+)\s*tỷ/i);
+        if (priceTextMatch) {
+          listing.price = Math.round(parseFloat(priceTextMatch[1].replace(',', '.')) * 1000000000);
+        }
       }
+      
+      // Surface
+      const areaMatch = articleHtml.match(/itemprop=["']value["'][^>]*>(\d+)/i) ||
+                        articleHtml.match(/>(\d+)\s*m²</i);
+      if (areaMatch) {
+        listing.area = parseInt(areaMatch[1]);
+      }
+      
+      // Adresse
+      const localityMatch = articleHtml.match(/itemprop=["']addressLocality["'][^>]*>([^<]+)</i);
+      const regionMatch = articleHtml.match(/itemprop=["']addressRegion["'][^>]*>([^<]+)</i);
+      listing.district = localityMatch ? localityMatch[1].trim() : '';
+      listing.city = regionMatch ? regionMatch[1].trim() : city;
+      
+      // Image
+      const imageMatch = articleHtml.match(/src=["']([^"']*(?:thumbnail|files)[^"']*)["']/i);
+      if (imageMatch) {
+        listing.thumbnail = imageMatch[1].startsWith('http') ? imageMatch[1] : `https://alonhadat.com.vn${imageMatch[1]}`;
+      }
+      
+      // Chambres
+      const bedroomMatch = articleHtml.match(/itemprop=["']numberOfBedrooms["'][^>]*>(\d+)/i) ||
+                           articleHtml.match(/>(\d+)\s*(?:pn|phòng ngủ|PN)</i);
+      if (bedroomMatch) {
+        listing.bedrooms = parseInt(bedroomMatch[1]);
+      }
+      
+      // Étages
+      const floorMatch = articleHtml.match(/>(\d+)\s*tầng</i);
+      if (floorMatch) {
+        listing.floors = parseInt(floorMatch[1]);
+      }
+      
+      listing.source = 'alonhadat.com.vn';
+      listing.images = listing.thumbnail ? [listing.thumbnail] : [];
+      
+      if (listing.title && listing.price > 0) {
+        listings.push(listing);
+      }
+    } catch (e) {
+      // Skip invalid listings
+    }
+  }
+  
+  return listings;
+}
+
+// ============================================
+// BATDONGSAN SCRAPER
+// ============================================
+async function fetchBatdongsan(params) {
+  const { city, propertyType, priceMax } = params;
+  
+  if (!SCRAPER_API_KEY) {
+    console.log('Batdongsan: SCRAPER_API_KEY non configuré, skip');
+    return [];
+  }
+  
+  const cityNormalized = removeVietnameseAccents(city || 'ho chi minh');
+  const typeNormalized = removeVietnameseAccents(propertyType || 'can ho chung cu');
+  
+  // Mapping ville
+  let citySlug = 'tp-hcm';
+  for (const [key, value] of Object.entries(BATDONGSAN_CITY_MAPPING)) {
+    if (cityNormalized.includes(key) || key.includes(cityNormalized)) {
+      citySlug = value;
+      break;
+    }
+  }
+  
+  // Mapping type
+  let typeSlug = 'ban-can-ho-chung-cu';
+  for (const [key, value] of Object.entries(BATDONGSAN_PROPERTY_TYPE)) {
+    if (typeNormalized.includes(key) || key.includes(typeNormalized)) {
+      typeSlug = value;
+      break;
+    }
+  }
+  
+  let targetUrl = `https://batdongsan.com.vn/${typeSlug}-${citySlug}`;
+  if (priceMax) {
+    targetUrl += `?gcn=${priceMax}-ty`;
+  }
+  
+  const scraperUrl = `https://api.scraperapi.com/?api_key=${SCRAPER_API_KEY}&url=${encodeURIComponent(targetUrl)}&country_code=vn`;
+  
+  console.log(`Batdongsan: scraping ${targetUrl}`);
+  
+  try {
+    const response = await fetch(scraperUrl);
+    if (!response.ok) {
+      console.log(`Batdongsan: HTTP ${response.status}`);
+      return [];
+    }
+    
+    const html = await response.text();
+    console.log(`Batdongsan: reçu ${(html.length/1024).toFixed(1)}KB`);
+    
+    // Extraire les URLs des annonces
+    const listingUrls = extractBdsListingUrls(html);
+    console.log(`Batdongsan: ${listingUrls.length} URLs trouvées`);
+    
+    // Limiter à 5 pour éviter timeout
+    const maxListings = 5;
+    const urlsToScrape = listingUrls.slice(0, maxListings);
+    
+    // Scraper les pages de détail
+    const listings = [];
+    for (let i = 0; i < urlsToScrape.length; i++) {
+      const urlInfo = urlsToScrape[i];
+      try {
+        const detailUrl = `https://api.scraperapi.com/?api_key=${SCRAPER_API_KEY}&url=${encodeURIComponent(urlInfo.fullUrl)}&country_code=vn`;
+        const detailResponse = await fetch(detailUrl);
+        if (detailResponse.ok) {
+          const detailHtml = await detailResponse.text();
+          const listing = parseBdsDetailPage(detailHtml, urlInfo, city, propertyType);
+          if (listing && listing.price > 0) {
+            listings.push(listing);
+          }
+        }
+        // Pause entre requêtes
+        if (i < urlsToScrape.length - 1) {
+          await new Promise(r => setTimeout(r, 200));
+        }
+      } catch (e) {
+        console.log(`Batdongsan detail error: ${e.message}`);
+      }
+    }
+    
+    console.log(`Batdongsan: ${listings.length} annonces avec prix valide`);
+    return listings;
+  } catch (error) {
+    console.log(`Batdongsan erreur: ${error.message}`);
+    return [];
+  }
+}
+
+function extractBdsListingUrls(html) {
+  const urls = [];
+  const seen = {};
+  
+  const urlRegex = /href="(\/ban-[^"]*-pr(\d+)[^"]*)"/gi;
+  let match;
+  
+  while ((match = urlRegex.exec(html)) !== null) {
+    const url = match[1];
+    const id = match[2];
+    if (!seen[id]) {
+      seen[id] = true;
+      urls.push({
+        id: id,
+        path: url,
+        fullUrl: 'https://batdongsan.com.vn' + url
+      });
+    }
+  }
+  
+  return urls;
+}
+
+function parseBdsDetailPage(html, urlInfo, city, propertyType) {
+  const listing = {
+    id: `bds_${urlInfo.id}`,
+    source: 'batdongsan.com.vn',
+    url: urlInfo.fullUrl,
+    city: city,
+    propertyType: propertyType,
+  };
+  
+  // Titre
+  const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+  if (titleMatch) {
+    listing.title = titleMatch[1]
+      .replace(/ - Batdongsan.com.vn$/i, '')
+      .replace(/ \| Batdongsan$/i, '')
+      .substring(0, 150);
+  }
+  
+  // Prix depuis JS: price: 1850000000,
+  const priceMatch = html.match(/price:\s*(\d{8,12})[,\s]/);
+  if (priceMatch) {
+    listing.price = parseInt(priceMatch[1]);
+  }
+  
+  // Prix/m2
+  const priceM2Match = html.match(/pricePerM2:\s*([\d.]+)/);
+  if (priceM2Match) {
+    listing.pricePerSqm = Math.round(parseFloat(priceM2Match[1]));
+  }
+  
+  // Surface
+  const areaMatch = html.match(/area:\s*(\d+)/);
+  if (areaMatch) {
+    listing.area = parseInt(areaMatch[1]);
+  }
+  
+  // Chambres
+  const bedroomMatch = html.match(/bedroom[s]?:\s*(\d+)/i) ||
+                       html.match(/(\d+)\s*(?:PN|phòng ngủ)/i);
+  if (bedroomMatch) {
+    listing.bedrooms = parseInt(bedroomMatch[1]);
+  }
+  
+  // SDB
+  const bathroomMatch = html.match(/bathroom[s]?:\s*(\d+)/i) ||
+                        html.match(/(\d+)\s*(?:WC|phòng tắm)/i);
+  if (bathroomMatch) {
+    listing.bathrooms = parseInt(bathroomMatch[1]);
+  }
+  
+  // Image
+  const ogImageMatch = html.match(/property="og:image"\s+content="([^"]+)"/i) ||
+                       html.match(/content="([^"]+)"\s+property="og:image"/i);
+  if (ogImageMatch) {
+    listing.thumbnail = ogImageMatch[1];
+  } else {
+    const cdnMatch = html.match(/https:\/\/file4\.batdongsan\.com\.vn\/[^"'\s]+\.(?:jpg|jpeg|png|webp)/i);
+    if (cdnMatch) {
+      listing.thumbnail = cdnMatch[0];
+    }
+  }
+  
+  listing.images = listing.thumbnail ? [listing.thumbnail] : [];
+  
+  // Adresse
+  const addressMatch = html.match(/address["\']?:\s*["\']([^"\']+)["\']/i);
+  if (addressMatch) {
+    listing.address = addressMatch[1];
+  }
+  
+  // District
+  const districtMatch = html.match(/district["\']?:\s*["\']([^"\']+)["\']/i);
+  if (districtMatch) {
+    listing.district = districtMatch[1];
+  }
+  
+  return listing;
+}
+
+// ============================================
+// FILTRES ET UTILITAIRES
+// ============================================
+function filterByKeywords(results, includeKeywords, excludeKeywords) {
+  return results.filter(item => {
+    const title = removeVietnameseAccents(item.title || '');
+    const propertyType = removeVietnameseAccents(item.propertyType || '');
+    const combined = title + ' ' + propertyType;
+    
+    if (excludeKeywords.length > 0) {
+      for (const kw of excludeKeywords) {
+        if (combined.includes(removeVietnameseAccents(kw))) {
+          return false;
+        }
+      }
+    }
+    
+    if (includeKeywords.length > 0) {
+      let hasMatch = false;
+      for (const kw of includeKeywords) {
+        const kwNormalized = removeVietnameseAccents(kw);
+        if (combined.includes(kwNormalized)) {
+          hasMatch = true;
+          break;
+        }
+      }
+      return hasMatch;
+    }
+    
+    return true;
+  });
+}
+
+function applyFilters(results, filters) {
+  const { city, district, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, legalStatus, streetWidthMin } = filters;
+  let filtered = [...results];
+  
+  if (priceMin) {
+    const min = parseFloat(priceMin) * 1000000000;
+    filtered = filtered.filter(item => {
+      if (item.source === 'batdongsan.com.vn' && (!item.price || item.price === 0)) {
+        return true;
+      }
+      return item.price >= min;
+    });
+  }
+  
+  if (priceMax) {
+    const max = parseFloat(priceMax) * 1000000000;
+    filtered = filtered.filter(item => {
+      if (item.source === 'batdongsan.com.vn' && (!item.price || item.price === 0)) {
+        return true;
+      }
+      return item.price > 0 && item.price <= max;
+    });
+  }
+  
+  if (district) {
+    const d = removeVietnameseAccents(district.toLowerCase());
+    const beforeCount = filtered.length;
+    filtered = filtered.filter(item => {
+      const itemDistrict = removeVietnameseAccents((item.district || '').toLowerCase());
+      const itemTitle = removeVietnameseAccents((item.title || '').toLowerCase());
+      const itemAddress = removeVietnameseAccents((item.address || '').toLowerCase());
+      const combined = itemDistrict + ' ' + itemTitle + ' ' + itemAddress;
+      return combined.includes(d);
+    });
+  }
+  
+  if (livingAreaMin) {
+    filtered = filtered.filter(item => (item.area || 0) >= parseInt(livingAreaMin));
+  }
+  
+  if (livingAreaMax) {
+    filtered = filtered.filter(item => {
+      const area = item.area || 0;
+      return area > 0 && area <= parseInt(livingAreaMax);
+    });
+  }
+  
+  if (bedrooms) {
+    filtered = filtered.filter(item => item.bedrooms >= parseInt(bedrooms));
+  }
+  
+  if (legalStatus) {
+    filtered = filtered.filter(item => {
+      if (legalStatus === 'sohong') return item.legalStatus === 'Sổ đỏ/Sổ hồng';
+      if (legalStatus === 'hopdong') return item.legalStatus === 'Hợp đồng mua bán';
+      if (legalStatus === 'dangcho') return item.legalStatus === 'Đang chờ sổ';
+      return true;
+    });
+  }
+  
+  if (streetWidthMin) {
+    filtered = filtered.filter(item => {
+      if (!item.streetWidth) return false;
+      return item.streetWidth >= parseFloat(streetWidthMin);
+    });
+  }
+  
+  return filtered;
+}
+
+function normalizeTitle(title) {
+  return (title || '')
+    .toLowerCase()
+    .replace(/bán\s*gấp|cần\s*bán|bán\s*nhanh|bán/g, '')
+    .replace(/căn\s*hộ|chung\s*cư|apartment/g, '')
+    .replace(/[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/g, '')
+    .substring(0, 30);
+}
+
+function deduplicateResults(results) {
+  const seen = new Set();
+  return results.filter(item => {
+    const key = `${normalizeTitle(item.title)}_${Math.round((item.price || 0) / 500000000)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+const URGENT_KEYWORDS = [
+  { pattern: /bán\s*gấp/i, weight: 25, label: 'Bán gấp' },
+  { pattern: /cần\s*bán\s*gấp/i, weight: 25, label: 'Cần bán gấp' },
+  { pattern: /cần\s*bán\s*nhanh/i, weight: 20, label: 'Cần bán nhanh' },
+  { pattern: /cần\s*bán(?!\s*(gấp|nhanh))/i, weight: 15, label: 'Cần bán' },
+  { pattern: /kẹt\s*tiền/i, weight: 25, label: 'Kẹt tiền' },
+  { pattern: /cần\s*tiền/i, weight: 20, label: 'Cần tiền' },
+  { pattern: /ngộp\s*bank/i, weight: 25, label: 'Ngộp bank' },
+  { pattern: /thanh\s*lý/i, weight: 20, label: 'Thanh lý' },
+  { pattern: /bán\s*lỗ/i, weight: 25, label: 'Bán lỗ' },
+  { pattern: /giá\s*rẻ/i, weight: 15, label: 'Giá rẻ' },
+  { pattern: /giá\s*tốt/i, weight: 10, label: 'Giá tốt' },
+  { pattern: /bán\s*nhanh/i, weight: 15, label: 'Bán nhanh' },
+  { pattern: /chính\s*chủ/i, weight: 10, label: 'Chính chủ' },
+  { pattern: /cắt\s*lỗ/i, weight: 25, label: 'Cắt lỗ' },
+  { pattern: /hạ\s*giá/i, weight: 20, label: 'Hạ giá' },
+  { pattern: /lỗ\s*vốn/i, weight: 20, label: 'Lỗ vốn' },
+];
+
+function calculateNegotiationScore(item, avgPricePerM2) {
+  let score = 0;
+  const details = {
+    urgentKeywords: [],
+    priceAnalysis: null,
+    listingAge: null,
+    photoAnalysis: null,
+    priceType: null,
+    legalStatus: null,
+    nlpFactors: []
+  };
+  
+  const title = (item.title || '').toLowerCase();
+  const body = (item.body || '').toLowerCase();
+  
+  let maxUrgentWeight = 0;
+  for (const kw of URGENT_KEYWORDS) {
+    if (kw.pattern.test(title) || kw.pattern.test(body)) {
+      details.urgentKeywords.push(kw.label);
+      if (kw.weight > maxUrgentWeight) {
+        maxUrgentWeight = kw.weight;
+      }
+    }
+  }
+  score += maxUrgentWeight;
+  
+  if (item.area > 0 && item.price > 0 && avgPricePerM2 > 0) {
+    const itemPricePerM2 = item.price / item.area;
+    const priceDiff = ((avgPricePerM2 - itemPricePerM2) / avgPricePerM2) * 100;
+    
+    details.priceAnalysis = {
+      itemPricePerM2: Math.round(itemPricePerM2),
+      avgPricePerM2: Math.round(avgPricePerM2),
+      diffPercent: Math.round(priceDiff),
     };
     
-    return (
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
-        <div 
-          className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-4 flex items-center justify-between cursor-pointer"
-          onClick={() => setShowMarketStats(!showMarketStats)}
-        >
-          <h3 className="text-white font-bold flex items-center gap-2">
-            📊 {t.marketStats}
-            <span className="bg-white/20 px-2 py-0.5 rounded-full text-sm">{data.length} districts</span>
-          </h3>
-          <button className="text-white/80 hover:text-white">
-            {showMarketStats ? '▼' : '▶'}
-          </button>
-        </div>
-        
-        {showMarketStats && (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 border-b">
-                <tr>
-                  <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">{t.district}</th>
-                  <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700">#</th>
-                  <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700">{t.avgPrice}</th>
-                  <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700">Min</th>
-                  <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700">Max</th>
-                  <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700">
-                    <span className="flex items-center justify-center gap-1">
-                      <Database className="w-4 h-4" />
-                      {t.archive}
-                    </span>
-                  </th>
-                  <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700">{t.trend}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.slice(0, 10).map((district, index) => (
-                  <tr 
-                    key={district.district} 
-                    className={\`border-b hover:bg-slate-50 transition \${index % 2 === 0 ? 'bg-white' : 'bg-slate-25'}\`}
-                  >
-                    <td className="px-6 py-4">
-                      <span className="font-medium text-gray-800">{district.district}</span>
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      <span className="font-bold text-indigo-600">{district.count}</span>
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      <span className="font-semibold text-emerald-600">
-                        {formatPricePerM2(district.avgPricePerM2)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 text-center text-sm text-gray-500">
-                      {formatPricePerM2(district.minPricePerM2)}
-                    </td>
-                    <td className="px-4 py-4 text-center text-sm text-gray-500">
-                      {formatPricePerM2(district.maxPricePerM2)}
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      {district.archiveCount > 0 ? (
-                        <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-sm font-medium">
-                          {district.archiveCount}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 text-sm">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      {getTrendIcon(district.trend, district.trendPercent)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {data.length > 10 && (
-              <div className="px-6 py-3 bg-slate-50 text-center text-sm text-gray-500">
-                +{data.length - 10} autres districts
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
+    if (priceDiff >= 20) {
+      score += 25;
+      details.priceAnalysis.verdict = 'excellent';
+    } else if (priceDiff >= 10) {
+      score += 20;
+      details.priceAnalysis.verdict = 'good';
+    } else if (priceDiff >= 5) {
+      score += 10;
+      details.priceAnalysis.verdict = 'fair';
+    } else if (priceDiff >= 0) {
+      score += 5;
+      details.priceAnalysis.verdict = 'average';
+    } else {
+      details.priceAnalysis.verdict = 'above_average';
+    }
+  }
+  
+  const listTime = item.list_time || 0;
+  let daysOnline = 0;
+  
+  if (listTime > 0) {
+    const listTimeMs = listTime > 10000000000 ? listTime : listTime * 1000;
+    daysOnline = Math.floor((Date.now() - listTimeMs) / (1000 * 60 * 60 * 24));
+    if (daysOnline < 0 || daysOnline > 3650) {
+      daysOnline = 0;
+    }
+  }
+  
+  details.listingAge = { days: daysOnline };
+  
+  if (daysOnline > 60) {
+    score += 20;
+    details.listingAge.verdict = 'very_old';
+  } else if (daysOnline > 30) {
+    score += 15;
+    details.listingAge.verdict = 'old';
+  } else if (daysOnline > 14) {
+    score += 5;
+    details.listingAge.verdict = 'moderate';
+  } else {
+    details.listingAge.verdict = 'fresh';
+  }
+  
+  const numPhotos = (item.images || []).length || (item.thumbnail ? 1 : 0);
+  details.photoAnalysis = { count: numPhotos };
+  
+  if (numPhotos === 0) {
+    score += 10;
+    details.photoAnalysis.verdict = 'none';
+  } else if (numPhotos <= 2) {
+    score += 5;
+    details.photoAnalysis.verdict = 'few';
+  } else {
+    details.photoAnalysis.verdict = 'good';
+  }
+  
+  const priceInBillion = item.price / 1000000000;
+  const isRoundPrice = priceInBillion === Math.floor(priceInBillion) || 
+                       (priceInBillion * 10) === Math.floor(priceInBillion * 10);
+  
+  if (isRoundPrice && priceInBillion >= 1) {
+    score += 5;
+    details.priceType = 'round';
+  } else {
+    details.priceType = 'precise';
+  }
+  
+  if (item.legalStatus) {
+    if (item.legalStatus === 'Sổ đỏ/Sổ hồng') {
+      score += 15;
+      details.legalStatus = { status: item.legalStatus, verdict: 'excellent' };
+    } else if (item.legalStatus === 'Hợp đồng mua bán') {
+      score += 8;
+      details.legalStatus = { status: item.legalStatus, verdict: 'good' };
+    } else if (item.legalStatus === 'Đang chờ sổ') {
+      score += 3;
+      details.legalStatus = { status: item.legalStatus, verdict: 'pending' };
+    }
+  } else {
+    details.legalStatus = { status: null, verdict: 'unknown' };
+  }
+  
+  if (item.hasMetroNearby) {
+    score += 10;
+    details.nlpFactors.push({ 
+      type: 'bonus', 
+      label: '🚇 Gần Metro', 
+      points: 10
+    });
+  }
+  
+  if (item.hasNewRoad) {
+    score += 8;
+    details.nlpFactors.push({ 
+      type: 'bonus', 
+      label: '🛣️ Sắp mở đường', 
+      points: 8
+    });
+  }
+  
+  if (item.hasInvestmentPotential) {
+    score += 5;
+    details.nlpFactors.push({ 
+      type: 'bonus', 
+      label: '📈 Tiềm năng đầu tư', 
+      points: 5
+    });
+  }
+  
+  if (item.hasLegalIssue) {
+    score -= 15;
+    details.nlpFactors.push({ 
+      type: 'malus', 
+      label: '⚠️ Chưa có sổ', 
+      points: -15
+    });
+  }
+  
+  if (item.hasPlanningRisk) {
+    score -= 15;
+    details.nlpFactors.push({ 
+      type: 'malus', 
+      label: '🚨 Rủi ro quy hoạch', 
+      points: -15
+    });
+  }
+  
+  const finalScore = Math.min(100, Math.max(0, score));
+  
+  let negotiationLevel;
+  if (finalScore >= 70) {
+    negotiationLevel = 'excellent';
+  } else if (finalScore >= 50) {
+    negotiationLevel = 'good';
+  } else if (finalScore >= 30) {
+    negotiationLevel = 'moderate';
+  } else {
+    negotiationLevel = 'low';
+  }
+  
+  return {
+    score: finalScore,
+    level: negotiationLevel,
+    details,
   };
+}
 
-  return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button onClick={() => router.push('/')} className="p-2 hover:bg-sky-50 rounded-lg text-sky-600">
-              <Home className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-2">
-              <img src="https://raw.githubusercontent.com/f8902621-byte/traxhome-mvp/main/Ktrixlogo.png" alt="K Trix" className="w-14 h-14 object-contain" />
-              <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full font-medium">MVP</span>
-            </div>
-            <button onClick={() => router.push('/monitoring')} className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-sm hover:bg-slate-200" title="Monitoring">
-              🔍
-            </button>
-            <button onClick={() => setShowSearch(!showSearch)} className="px-4 py-2 bg-gradient-to-r from-blue-500 to-sky-400 text-white rounded-lg font-medium flex items-center gap-2 shadow-md">
-              <Search className="w-4 h-4" />
-              {t.searchParams}
-            </button>
-            <button onClick={() => setShowSavedSearches(!showSavedSearches)} className="px-4 py-2 bg-orange-100 text-orange-600 rounded-lg font-medium">
-              ⭐ {t.savedSearches} ({savedSearches.length})
-            </button>
-          </div>
-          <div className="flex items-center gap-4">
-            <select value={language} onChange={(e) => setLanguage(e.target.value)} className="px-3 py-2 border rounded-lg bg-white">
-              <option value="vn">🇻🇳 VN</option>
-              <option value="en">🇬🇧 EN</option>
-              <option value="fr">🇫🇷 FR</option>
-            </select>
-            <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="px-3 py-2 border rounded-lg bg-white">
-              <option value="VND">VND</option>
-              <option value="USD">USD</option>
-            </select>
-          </div>
-        </div>
-      </header>
+function calculateDistrictStats(results) {
+  const districtData = {};
+  
+  for (const item of results) {
+    const district = (item.district || 'unknown').toLowerCase().trim();
+    if (!district || district === 'unknown') continue;
+    
+    const area = item.area || item.floorAreaSqm || 0;
+    const price = item.price || 0;
+    
+    if (area > 0 && price > 0) {
+      if (!districtData[district]) {
+        districtData[district] = {
+          prices: [],
+          pricesPerM2: [],
+          count: 0
+        };
+      }
+      
+      const pricePerM2 = price / area;
+      districtData[district].prices.push(price);
+      districtData[district].pricesPerM2.push(pricePerM2);
+      districtData[district].count++;
+    }
+  }
+  
+  const districtStats = {};
+  
+  for (const [district, data] of Object.entries(districtData)) {
+    if (data.count < 3) continue;
+    
+    const sortedPrices = [...data.pricesPerM2].sort((a, b) => a - b);
+    const count = sortedPrices.length;
+    
+    const p25Index = Math.floor(count * 0.25);
+    const p75Index = Math.floor(count * 0.75);
+    const medianIndex = Math.floor(count * 0.5);
+    
+    districtStats[district] = {
+      count: data.count,
+      avgPricePerM2: Math.round(data.pricesPerM2.reduce((a, b) => a + b, 0) / count),
+      medianPricePerM2: Math.round(sortedPrices[medianIndex]),
+      minPricePerM2: Math.round(sortedPrices[0]),
+      maxPricePerM2: Math.round(sortedPrices[count - 1]),
+      lowRange: Math.round(sortedPrices[p25Index]),
+      highRange: Math.round(sortedPrices[p75Index]),
+    };
+  }
+  
+  return districtStats;
+}
 
-      {/* Saved Searches */}
-      {showSavedSearches && (
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold mb-4">⭐ {t.savedSearches}</h2>
-            {savedSearches.length === 0 ? (
-              <p className="text-gray-500">{t.noSavedSearches}</p>
-            ) : (
-              <div className="space-y-3">
-                {savedSearches.map((search) => (
-                  <div key={search.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-                    <div>
-                      <p className="font-medium">{search.name}</p>
-                      <p className="text-sm text-gray-500">{search.date}</p>
-                    </div>
-                    <button onClick={() => { setSearchParams(search.params); setShowSavedSearches(false); }} className="px-4 py-2 bg-sky-100 text-sky-700 rounded-lg">
-                      {t.loadSearch}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+function analyzePricePosition(item, districtStats) {
+  const district = (item.district || '').toLowerCase().trim();
+  const area = item.area || item.floorAreaSqm || 0;
+  const price = item.price || 0;
+  
+  if (!district || area <= 0 || price <= 0 || !districtStats[district]) {
+    return null;
+  }
+  
+  const stats = districtStats[district];
+  const itemPricePerM2 = price / area;
+  
+  let position, verdict, percentFromMedian;
+  
+  percentFromMedian = Math.round(((itemPricePerM2 - stats.medianPricePerM2) / stats.medianPricePerM2) * 100);
+  
+  if (itemPricePerM2 < stats.lowRange) {
+    position = 'below';
+    verdict = 'Dưới giá thị trường';
+  } else if (itemPricePerM2 > stats.highRange) {
+    position = 'above';
+    verdict = 'Cao hơn giá thị trường';
+  } else {
+    position = 'within';
+    verdict = 'Giá hợp lý';
+  }
+  
+  return {
+    itemPricePerM2: Math.round(itemPricePerM2),
+    districtAvg: stats.avgPricePerM2,
+    districtMedian: stats.medianPricePerM2,
+    districtLowRange: stats.lowRange,
+    districtHighRange: stats.highRange,
+    districtMin: stats.minPricePerM2,
+    districtMax: stats.maxPricePerM2,
+    districtCount: stats.count,
+    position,
+    verdict,
+    percentFromMedian,
+  };
+}
 
-      {/* Search Form */}
-      {showSearch && (
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
-            {/* Sources */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">🌐 {t.sources}</label>
-              <div className="flex flex-wrap gap-2">
-                {availableSources.map((source) => (
-                  <button
-                    key={source.id}
-                    type="button"
-                    onClick={() => {
-                      if (!source.active) return;
-                      const newSources = searchParams.sources.includes(source.id)
-                        ? searchParams.sources.filter(s => s !== source.id)
-                        : [...searchParams.sources, source.id];
-                      setSearchParams({ ...searchParams, sources: newSources });
-                    }}
-                    disabled={!source.active}
-                    className={\`px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 \${
-                      !source.active ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : searchParams.sources.includes(source.id) ? 'bg-sky-500 text-white shadow-md' : 'bg-slate-100 text-gray-700 hover:bg-slate-200 border-2 border-slate-200'
-                    }\`}
-                  >
-                    {searchParams.sources.includes(source.id) && <span>✓</span>}
-                    {source.name} {!source.active && \`(\${t.comingSoon})\`}
-                  </button>
-                ))}
-              </div>
-            </div>
+// ============================================
+// VERCEL HANDLER (export default)
+// ============================================
+export default async function handler(req, res) {
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Content-Type', 'application/json');
 
-            {/* Buy/Sell */}
-            <div className="flex gap-4">
-              <button onClick={() => setMode('buy')} className={\`px-6 py-3 rounded-lg font-medium \${mode === 'buy' ? 'bg-sky-500 text-white' : 'bg-slate-100'}\`}>
-                🏠 {t.buy}
-              </button>
-              <button onClick={() => setMode('sell')} className={\`px-6 py-3 rounded-lg font-medium \${mode === 'sell' ? 'bg-orange-400 text-white' : 'bg-slate-100'}\`}>
-                💰 {t.sell}
-              </button>
-            </div>
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
-            {/* Location */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">{t.city} <span className="text-orange-500">*</span></label>
-                <select value={searchParams.city} onChange={(e) => setSearchParams({...searchParams, city: e.target.value, district: ''})} className="w-full px-4 py-2.5 border rounded-lg">
-                  <option value="">{t.selectCity}</option>
-                  {vietnamCities.map((c, i) => <option key={i} value={c.vn}>{c[language]}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">{t.district}</label>
-                <select value={searchParams.district} onChange={(e) => setSearchParams({...searchParams, district: e.target.value})} className="w-full px-4 py-2.5 border rounded-lg" disabled={!searchParams.city}>
-                  <option value="">{t.allDistricts}</option>
-                  {currentDistricts.map((d, i) => <option key={i} value={d}>{d}</option>)}
-                </select>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-gray-700 mb-2">{t.propertyType} <span className="text-orange-500">*</span></label>
-                <select value={searchParams.propertyType} onChange={(e) => setSearchParams({...searchParams, propertyType: e.target.value})} className="w-full px-4 py-2.5 border rounded-lg">
-                  <option value="">{t.selectType}</option>
-                  {getPropertyTypesByCategory().all.map((pt, i) => (
-                    <option key={\`all-\${i}\`} value={pt.vn}>📋 {pt[language]}</option>
-                  ))}
-                  <optgroup label="🏢 Apartments">
-                    {getPropertyTypesByCategory().apartment.map((pt, i) => (
-                      <option key={\`apt-\${i}\`} value={pt.vn}>{pt[language]}</option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="🏠 Houses">
-                    {getPropertyTypesByCategory().house.map((pt, i) => (
-                      <option key={\`house-\${i}\`} value={pt.vn}>{pt[language]}</option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="🏪 Commercial">
-                    {getPropertyTypesByCategory().commercial.map((pt, i) => (
-                      <option key={\`comm-\${i}\`} value={pt.vn}>{pt[language]}</option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="🌳 Land">
-                    {getPropertyTypesByCategory().land.map((pt, i) => (
-                      <option key={\`land-\${i}\`} value={pt.vn}>{pt[language]}</option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="📦 Other">
-                    {getPropertyTypesByCategory().other.map((pt, i) => (
-                      <option key={\`other-\${i}\`} value={pt.vn}>{pt[language]}</option>
-                    ))}
-                  </optgroup>
-                </select>
-              </div>
-            </div>
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-            {/* Price */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">{t.priceMin}</label>
-                <div className="flex items-center gap-2">
-                  <input type="number" step="0.1" min="0" max="500" value={searchParams.priceMin} onChange={(e) => setSearchParams({...searchParams, priceMin: e.target.value})} className="w-24 px-3 py-2.5 border rounded-lg text-right" placeholder="0" />
-                  <span className="text-gray-500 font-medium">Tỷ</span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">{t.priceMax} <span className="text-orange-500">*</span></label>
-                <div className="flex items-center gap-2">
-                  <input type="number" step="0.1" min="0" max="500" value={searchParams.priceMax} onChange={(e) => setSearchParams({...searchParams, priceMax: e.target.value})} className="w-24 px-3 py-2.5 border rounded-lg text-right" placeholder="10" />
-                  <span className="text-gray-500 font-medium">Tỷ</span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">{t.livingArea}</label>
-                <div className="flex gap-2">
-                  <input type="number" value={searchParams.livingAreaMin} onChange={(e) => setSearchParams({...searchParams, livingAreaMin: e.target.value})} className="w-full px-3 py-2.5 border rounded-lg" placeholder={t.min} />
-                  <input type="number" value={searchParams.livingAreaMax} onChange={(e) => setSearchParams({...searchParams, livingAreaMax: e.target.value})} className="w-full px-3 py-2.5 border rounded-lg" placeholder={t.max} />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">{t.bedrooms}</label>
-                <input type="number" value={searchParams.bedrooms} onChange={(e) => setSearchParams({...searchParams, bedrooms: e.target.value})} className="w-full px-4 py-2.5 border rounded-lg" placeholder="2" />
-              </div>
-            </div>
+  const { city, district, propertyType, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, sources, sortBy, keywords, keywordsOnly, legalStatus } = req.body || {};
 
-            {/* Extra filters */}
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">🚿 {t.bathrooms}</label>
-                <input type="number" value={searchParams.bathrooms} onChange={(e) => setSearchParams({...searchParams, bathrooms: e.target.value})} className="w-full px-4 py-2.5 border rounded-lg" placeholder="1" />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">{t.daysListed}</label>
-                <input type="number" value={searchParams.daysListed} onChange={(e) => setSearchParams({...searchParams, daysListed: e.target.value})} className="w-full px-4 py-2.5 border rounded-lg" placeholder="30" />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">{t.legalStatus}</label>
-                <select value={searchParams.legalStatus} onChange={(e) => setSearchParams({...searchParams, legalStatus: e.target.value})} className="w-full px-4 py-2.5 border rounded-lg">
-                  <option value="">{t.legalAll}</option>
-                  <option value="sohong">{t.legalSoHong}</option>
-                  <option value="hopdong">{t.legalHopdong}</option>
-                  <option value="dangcho">{t.legalDangcho}</option>
-                </select>
-              </div>
-              <div className="flex items-end">
-                <label className="flex items-center gap-2 cursor-pointer pb-2">
-                  <input type="checkbox" checked={searchParams.hasParking} onChange={(e) => setSearchParams({...searchParams, hasParking: e.target.checked})} className="w-5 h-5 text-sky-500 rounded" />
-                  <span className="text-sm font-medium">🚗 {t.hasParking}</span>
-                </label>
-              </div>
-              <div className="flex items-end">
-                <label className="flex items-center gap-2 cursor-pointer pb-2">
-                  <input type="checkbox" checked={searchParams.hasPool} onChange={(e) => setSearchParams({...searchParams, hasPool: e.target.checked})} className="w-5 h-5 text-sky-500 rounded" />
-                  <span className="text-sm font-medium">🏊 {t.hasPool}</span>
-                </label>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">🛣️ {t.streetWidth}</label>
-                <input type="number" value={searchParams.streetWidthMin} onChange={(e) => setSearchParams({...searchParams, streetWidthMin: e.target.value})} placeholder="4" className="w-full px-3 py-2.5 border rounded-lg" />
-              </div>
-            </div>
+  console.log('=== NOUVELLE RECHERCHE V4 ===');
+  console.log('Params:', JSON.stringify({ city, propertyType, priceMin, priceMax, sortBy, sources }));
 
-            {/* Keywords */}
-            <div>
-              <label className="block text-sm font-bold text-orange-600 mb-1">🔥 {t.keywords}</label>
-              <p className="text-xs text-gray-500 mb-3">{t.keywordsDesc}</p>
-              <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3 pb-3 border-b border-orange-200">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const allKeywords = urgentKeywords.map(kw => kw[language]);
-                      const allSelected = allKeywords.every(kw => searchParams.keywords.includes(kw));
-                      setSearchParams({
-                        ...searchParams,
-                        keywords: allSelected ? [] : allKeywords
-                      });
-                    }}
-                    className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-bold text-sm shadow"
-                  >
-                    {urgentKeywords.map(kw => kw[language]).every(kw => searchParams.keywords.includes(kw)) 
-                      ? (language === 'vn' ? '❌ Bỏ chọn tất cả' : language === 'fr' ? '❌ Tout désélectionner' : '❌ Deselect All')
-                      : (language === 'vn' ? '✅ Chọn tất cả' : language === 'fr' ? '✅ Tout sélectionner' : '✅ Select All')}
-                  </button>
-                  <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-lg border border-orange-300">
-                    <input 
-                      type="checkbox" 
-                      checked={searchParams.keywordsOnly || false} 
-                      onChange={(e) => setSearchParams({...searchParams, keywordsOnly: e.target.checked})} 
-                      className="w-4 h-4 text-orange-500 rounded" 
-                    />
-                    <span className="text-sm font-medium text-orange-700">
-                      {language === 'vn' ? '🎯 Chỉ kết quả có từ khóa' : language === 'fr' ? '🎯 Uniquement avec mots-clés' : '🎯 Only with keywords'}
-                    </span>
-                  </label>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {urgentKeywords.map((kw, i) => (
-                    <button key={i} onClick={() => toggleKeyword(kw)} className={\`px-3 py-1.5 rounded-full text-sm font-medium transition \${searchParams.keywords.includes(kw[language]) ? 'bg-orange-500 text-white' : 'bg-white text-orange-600 border border-orange-300'}\`}>
-                      {kw[language]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+  try {
+    // Récupérer les stats archive en parallèle des recherches
+    const [archiveStats, totalArchive, ...sourceResults] = await Promise.all([
+      getArchiveStatsByDistrict(city, propertyType),
+      getTotalArchiveByDistrict(city),
+      // Sources
+      ...(sources?.includes('chotot') ? [
+        fetchChotot({ city, priceMin, priceMax, sortBy, propertyType })
+          .then(results => ({ source: 'chotot', results }))
+          .catch(e => { console.log(`Chotot erreur: ${e.message}`); return { source: 'chotot', results: [] }; })
+      ] : []),
+      ...(sources?.includes('alonhadat') ? [
+        fetchAlonhadat({ city, propertyType, priceMax })
+          .then(results => ({ source: 'alonhadat', results }))
+          .catch(e => { console.log(`Alonhadat erreur: ${e.message}`); return { source: 'alonhadat', results: [] }; })
+      ] : []),
+      ...(sources?.includes('batdongsan') ? [
+        fetchBatdongsan({ city, propertyType, priceMax })
+          .then(results => ({ source: 'batdongsan', results }))
+          .catch(e => { console.log(`Batdongsan erreur: ${e.message}`); return { source: 'batdongsan', results: [] }; })
+      ] : [])
+    ]);
 
-            {error && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 flex items-center gap-2 text-orange-700">
-                <AlertCircle className="w-5 h-5" />
-                {error}
-              </div>
-            )}
+    let allResults = [];
+    const typeMapping = getPropertyTypeMapping(propertyType);
 
-            {/* Actions */}
-            <div className="flex justify-between items-center pt-4 border-t bg-sky-50 -mx-6 -mb-6 px-6 py-4 rounded-b-xl">
-              <div>
-                <p className="text-sm font-semibold text-sky-700">⚠️ {t.required}</p>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={saveCurrentSearch} disabled={!searchParams.city || !searchParams.propertyType || !searchParams.priceMax} className="px-4 py-3 bg-slate-200 text-gray-700 rounded-lg font-medium disabled:opacity-50">
-                  ⭐ {t.saveSearch}
-                </button>
-                <button onClick={handleSearch} disabled={loading} className="px-8 py-3 bg-gradient-to-r from-blue-500 to-sky-400 text-white rounded-lg font-bold flex items-center gap-2 shadow-lg disabled:opacity-50">
-                  {loading ? <Loader className="w-6 h-6 animate-spin" /> : <Search className="w-6 h-6" />}
-                  {loading ? t.loading : t.search}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+    for (const { source, results } of sourceResults) {
+      console.log(`${source}: ${results.length} résultats bruts`);
+      
+      if (results && results.length > 0) {
+        let typeFiltered = results;
+        
+        // Only apply keyword filtering for Chotot (alonhadat/batdongsan are already filtered by URL)
+        if (source === 'chotot' && (typeMapping.include.length > 0 || typeMapping.exclude.length > 0)) {
+          const beforeType = results.length;
+          typeFiltered = filterByKeywords(results, typeMapping.include, typeMapping.exclude);
+          console.log(`${source}: filtrage type ${beforeType} → ${typeFiltered.length}`);
+        }
+        
+        const filtered = applyFilters(typeFiltered, { city, district, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, legalStatus });
+        console.log(`${source}: ${results.length} → ${typeFiltered.length} (type) → ${filtered.length} (autres filtres)`);
+        allResults.push(...filtered);
+      }
+    }
 
-      {/* Results */}
-      {!showSearch && (
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          {/* Search Criteria Banner */}
-          {results.length > 0 && (
-            <div className="bg-gradient-to-r from-sky-50 to-blue-50 border border-sky-200 rounded-xl p-4 mb-4 shadow-sm">
-              <div className="flex items-start gap-3">
-                <Info className="w-5 h-5 text-sky-600 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-sky-800 mb-2">📊 {t.searchCriteria}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {getSearchCriteriaSummary().map((criterion, i) => (
-                      <span key={i} className="px-3 py-1 bg-white text-sky-700 rounded-full text-xs font-medium border border-sky-200">
-                        {criterion}
-                      </span>
-                    ))}
-                    <span className="px-3 py-1 bg-sky-500 text-white rounded-full text-xs font-bold">
-                      {results.length} {t.results}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+    console.log(`TOTAL BRUT: ${allResults.length}`);
+    
+    let unique = deduplicateResults(allResults);
+    const districtStats = calculateDistrictStats(unique);
+    console.log(`Stats districts calculées: ${Object.keys(districtStats).length} districts`);
 
-          {/* Stats par source */}
-          {Object.keys(sourceStats).length > 0 && (
-            <div className="bg-white rounded-xl shadow-lg p-4 mb-4">
-              <p className="text-sm font-bold text-gray-700 mb-3">🌐 {t.sourceResults}</p>
-              <div className="grid grid-cols-3 gap-3">
-                {Object.entries(sourceStats).map(([source, count]) => (
-                  <div key={source} className={\`p-3 rounded-lg text-center \${
-                    source === 'chotot.com' ? 'bg-green-50 border border-green-200' :
-                    source === 'batdongsan.com.vn' ? 'bg-blue-50 border border-blue-200' :
-                    source === 'alonhadat.com.vn' ? 'bg-purple-50 border border-purple-200' :
-                    'bg-slate-50 border border-slate-200'
-                  }\`}>
-                    <p className={\`text-2xl font-bold \${
-                      source === 'chotot.com' ? 'text-green-600' :
-                      source === 'batdongsan.com.vn' ? 'text-blue-600' :
-                      source === 'alonhadat.com.vn' ? 'text-purple-600' :
-                      'text-slate-600'
-                    }\`}>{count}</p>
-                    <p className="text-xs text-gray-600">{source}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+    if (keywordsOnly) {
+      const before = unique.length;
+      const keywordsToUse = [
+        'ban gap', 'ban nhanh', 'can ban gap', 'can ban nhanh', 'can ban',
+        'ket tien', 'can tien', 'ngop bank', 'ngop ngan hang',
+        'gia re', 'chinh chu', 'mien trung gian',
+        'gia thuong luong', 'ban lo', 'cat lo', 'ha gia', 'thanh ly',
+        'gap', 'nhanh', 'lo von', 'gia tot'
+      ];
+      
+      unique = unique.filter(item => {
+        const title = removeVietnameseAccents((item.title || '').toLowerCase());
+        const body = removeVietnameseAccents((item.body || '').toLowerCase());
+        const combined = ' ' + title + ' ' + body + ' ';
+        
+        return keywordsToUse.some(kw => {
+          if (kw.length <= 4) {
+            return combined.includes(' ' + kw + ' ') || 
+                   combined.includes(' ' + kw + ',') || 
+                   combined.includes(' ' + kw + '.');
+          }
+          return combined.includes(kw);
+        });
+      });
+      
+      console.log(`Filtre keywordsOnly: ${before} → ${unique.length}`);
+    }
+    
+    let sortedResults = [...unique];
+    if (sortBy === 'price_asc') {
+      sortedResults.sort((a, b) => a.price - b.price);
+    } else if (sortBy === 'price_desc') {
+      sortedResults.sort((a, b) => b.price - a.price);
+    }
+    
+    const validPricePerM2 = sortedResults
+      .filter(item => item.area > 0 && item.price > 0)
+      .map(item => item.price / item.area);
+    const avgPricePerM2 = validPricePerM2.length > 0 
+      ? validPricePerM2.reduce((a, b) => a + b, 0) / validPricePerM2.length 
+      : 50000000;
 
-          {/* 📊 MARKET STATS TABLE WITH ARCHIVE AND TRENDS */}
-          <MarketStatsTable data={marketStats} />
+    const results = sortedResults.slice(0, 200).map((item, i) => {
+      const negotiation = calculateNegotiationScore(item, avgPricePerM2);
+      const pricePosition = analyzePricePosition(item, districtStats);
+      
+      return {
+        id: item.id || i,
+        title: item.title || 'Sans titre',
+        price: item.price || 0,
+        pricePerSqm: item.area > 0 ? Math.round(item.price / item.area) : 0,
+        avgPricePerSqm: Math.round(avgPricePerM2),
+        city: item.city || city || '',
+        district: item.district || '',
+        address: item.address || '',
+        floorArea: item.area || 0,
+        bedrooms: item.bedrooms || 0,
+        bathrooms: item.bathrooms || 0,
+        imageUrl: item.thumbnail || 'https://via.placeholder.com/300x200?text=No+Image',
+        images: item.images || [],
+        url: item.url || '#',
+        source: item.source || 'unknown',
+        score: negotiation.score,
+        negotiationLevel: negotiation.level,
+        negotiationDetails: negotiation.details,
+        hasUrgentKeyword: negotiation.details.urgentKeywords.length > 0,
+        urgentKeywords: negotiation.details.urgentKeywords,
+        isNew: /hôm nay|phút|today/i.test(item.postedOn || ''),
+        postedOn: item.postedOn || '',
+        daysOnline: negotiation.details.listingAge?.days || 0,
+        legalStatus: item.legalStatus || null,
+        direction: item.direction || null,
+        floors: item.floors || null,
+        streetWidth: item.streetWidth || null,
+        facadeWidth: item.facadeWidth || null,
+        furnishing: item.furnishing || null,
+        extractedRentalIncome: item.extractedRentalIncome || null,
+        hasMetroNearby: item.hasMetroNearby || false,
+        hasNewRoad: item.hasNewRoad || false,
+        hasInvestmentPotential: item.hasInvestmentPotential || false,
+        hasLegalIssue: item.hasLegalIssue || false,
+        hasPlanningRisk: item.hasPlanningRisk || false,
+        detectedKeywords: item.detectedKeywords || [],
+        pricePosition: pricePosition,
+      };
+    });
 
-          {/* BDS Loading Banner */}
-          {bdsStatus === 'polling' && (
-            <div className="mb-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-3 rounded-xl flex items-center justify-between shadow-lg animate-pulse">
-              <div className="flex items-center gap-3">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span className="font-medium">🔄 Recherche Batdongsan en cours... {bdsProgress}%</span>
-                {bdsCount > 0 && <span className="bg-white/20 px-2 py-1 rounded-full text-sm">{bdsCount} trouvées</span>}
-              </div>
-            </div>
-          )}
+    const prices = results.map(r => r.price).filter(p => p > 0);
+    const stats = {
+      lowestPrice: prices.length ? Math.min(...prices) : 0,
+      highestPrice: prices.length ? Math.max(...prices) : 0,
+      avgPricePerSqm: Math.round(avgPricePerM2),
+      totalResults: results.length,
+      totalAvailable: unique.length,
+    };
 
-          {/* BDS Completed Banner */}
-          {bdsStatus === 'completed' && bdsCount > 0 && (
-            <div className="mb-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl flex items-center gap-3 shadow-lg">
-              <span>✅</span>
-              <span className="font-medium">{bdsCount} annonces Batdongsan ajoutées !</span>
-            </div>
-          )}
+    // ============================================
+    // MARKET STATS AVEC ARCHIVE ET TRENDS
+    // ============================================
+    const marketStats = Object.entries(districtStats).map(([district, data]) => {
+      const districtLower = district.toLowerCase();
+      const archiveData = archiveStats[districtLower] || null;
+      const archiveCount = totalArchive[districtLower] || 0;
+      
+      // Calculer le trend si on a assez de données archive
+      let trend = null;
+      let trendPercent = null;
+      
+      if (archiveData && archiveData.avgPricePerM2 > 0 && archiveData.count >= 5) {
+        // Comparer prix actuel vs prix archive
+        const currentAvg = data.avgPricePerM2;
+        const archiveAvg = archiveData.avgPricePerM2;
+        trendPercent = Math.round(((currentAvg - archiveAvg) / archiveAvg) * 100);
+        
+        if (trendPercent > 2) {
+          trend = 'up';
+        } else if (trendPercent < -2) {
+          trend = 'down';
+        } else {
+          trend = 'stable';
+        }
+      }
+      
+      return {
+        district: district.charAt(0).toUpperCase() + district.slice(1),
+        count: data.count,
+        avgPricePerM2: data.avgPricePerM2,
+        medianPricePerM2: data.medianPricePerM2,
+        minPricePerM2: data.minPricePerM2,
+        maxPricePerM2: data.maxPricePerM2,
+        // Nouvelles colonnes
+        archiveCount: archiveCount,
+        trend: trend,
+        trendPercent: trendPercent,
+      };
+    }).sort((a, b) => b.count - a.count);
 
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <Loader className="w-16 h-16 text-sky-500 animate-spin mb-4" />
-              <p className="text-xl text-gray-600">{t.loading}</p>
-            </div>
-          ) : results.length > 0 ? (
-            <>
-              {stats && (
-                <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <h2 className="text-2xl font-bold">{results.length} {t.results}</h2>
-                      <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="px-3 py-2 border rounded-lg bg-white">
-                        <option value="score">{t.sortScore}</option>
-                        <option value="priceAsc">{t.sortPriceAsc}</option>
-                        <option value="priceDesc">{t.sortPriceDesc}</option>
-                      </select>
-                    </div>
-                    <button onClick={exportToExcel} className="px-4 py-2 bg-teal-100 text-teal-700 rounded-lg flex items-center gap-2">
-                      <Download className="w-4 h-4" />
-                      {t.export}
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 p-4 bg-sky-50 rounded-lg">
-                    <div>
-                      <p className="text-sm text-gray-600">{t.lowestPrice}</p>
-                      <p className="text-2xl font-bold text-sky-600">{formatPrice(stats.lowestPrice)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">{t.highestPrice}</p>
-                      <p className="text-2xl font-bold text-sky-600">{formatPrice(stats.highestPrice)}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+    console.log(`FINAL: ${results.length} résultats, ${marketStats.length} districts avec trends`);
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {sortResults(results).map((prop) => (
-                  <div key={prop.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
-                    <div className="relative h-48 bg-slate-200">
-                      <img src={prop.imageUrl} alt={prop.title} className="w-full h-full object-cover" />
-                      {prop.isNew && <div className="absolute top-2 left-2 bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-xs font-bold animate-pulse">{t.newListing}</div>}
-                      {prop.urgentKeywords && prop.urgentKeywords.length > 0 && (
-                        <div className="absolute top-2 right-2 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
-                          🔥 {prop.urgentKeywords[0]}
-                        </div>
-                      )}
-                      {prop.legalStatus && <div className="absolute bottom-2 left-2 bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">📋 {prop.legalStatus}</div>}
-                      <div className="absolute bottom-2 right-2 bg-sky-500 text-white px-2 py-1 rounded text-xs font-bold shadow">
-                        {prop.source}
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-bold text-lg mb-2 line-clamp-2">{prop.title}</h3>
-                      <div className="flex items-baseline gap-2 mb-2">
-                        <p className="text-2xl font-bold text-sky-600">{formatPrice(prop.price)}</p>
-                        {prop.pricePerSqm && prop.pricePerSqm > 0 && (
-                          <p className="text-sm text-gray-500">{Math.round(prop.pricePerSqm / 1000000)} tr/m²</p>
-                        )}
-                      </div>
-                      <div className="mb-3">
-                        <div className="flex justify-between mb-1">
-                          <span className="text-xs text-gray-600">{t.score}</span>
-                          <span className="text-sm font-bold">{prop.score}%</span>
-                        </div>
-                        <div className="w-full bg-slate-200 rounded-full h-2">
-                          <div className="h-2 rounded-full bg-gradient-to-r from-sky-400 to-blue-500" style={{ width: \`\${prop.score}%\` }} />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 mb-3">
-                        <div>📐 {prop.floorArea || '?'}m²</div>
-                        <div>🛏️ {prop.bedrooms || '?'} ch.</div>
-                      </div>
-                      <div 
-                        className="flex items-start gap-2 text-sm text-gray-700 mb-3 cursor-pointer hover:text-sky-600 bg-slate-50 p-2 rounded-lg" 
-                        onClick={() => window.open(\`https://www.google.com/maps/search/?api=1&query=\${encodeURIComponent(prop.address || prop.district + ' ' + prop.city)}\`, '_blank')}
-                      >
-                        <MapPin className="w-4 h-4 mt-0.5 text-sky-500 flex-shrink-0" />
-                        <span className="line-clamp-2">{prop.address || \`\${prop.district}\${prop.district ? ', ' : ''}\${prop.city}\`}</span>
-                      </div>
-                      {prop.postedOn && (
-                        <div className="text-xs text-gray-500 mb-2">📅 {prop.postedOn}</div>
-                      )}
-                      <a 
-                        href={prop.url} 
-                        onClick={(e) => { e.preventDefault(); setSelectedProperty(prop); }}
-                        onAuxClick={(e) => { if (e.button === 1) window.open(prop.url, '_blank'); }}
-                        className="block w-full px-4 py-2 bg-orange-400 text-white rounded-lg hover:bg-orange-500 font-medium text-center cursor-pointer"
-                      >
-                        {t.viewDetails}
-                      </a>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-20">
-              <AlertCircle className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <p className="text-xl text-gray-500">{t.noResults}</p>
-            </div>
-          )}
-        </div>
-      )}
+    return res.status(200).json({ success: true, results, stats, marketStats });
 
-      {/* Property Modal */}
-      {selectedProperty && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10">
-              <h2 className="text-xl font-bold">📊 {t.propertyDetails}</h2>
-              <button onClick={() => setSelectedProperty(null)} className="p-2 hover:bg-slate-100 rounded-full text-xl">✕</button>
-            </div>
-            <div className="p-6">
-              <p className="text-gray-500">Modal content here</p>
-              <button 
-                onClick={() => setSelectedProperty(null)} 
-                className="mt-4 px-6 py-3 border border-slate-300 rounded-lg font-medium hover:bg-slate-50 transition"
-              >
-                {t.close}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  } catch (error) {
+    console.error('Error:', error);
+    return res.status(500).json({ success: false, error: error.message, results: [], stats: {} });
+  }
 }
