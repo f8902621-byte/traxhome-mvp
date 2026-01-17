@@ -78,7 +78,7 @@ export default function SearchPage() {
     
     const pollInterval = setInterval(async () => {
       try {
-        const response = await fetch(\`/api/bds-status?taskId=\${bdsTaskId}\`);
+        const response = await fetch(`/api/bds-status?taskId=${bdsTaskId}`);
         const data = await response.json();
         
         if (data.success) {
@@ -90,7 +90,7 @@ export default function SearchPage() {
               const existingIds = new Set(prev.map(r => r.id));
               const newBds = data.listings.filter(l => !existingIds.has(l.id));
               if (newBds.length > 0) {
-                console.log(\`BDS: +\${newBds.length} nouvelles annonces\`);
+                console.log(`BDS: +${newBds.length} nouvelles annonces`);
                 return [...prev, ...newBds];
               }
               return prev;
@@ -339,14 +339,14 @@ export default function SearchPage() {
   const formatPrice = (price) => {
     if (!price) return '-';
     if (currency === 'VND') {
-      return \`\${(price / 1000000000).toFixed(1).replace('.', ',')} Tỷ\`;
+      return `${(price / 1000000000).toFixed(1).replace('.', ',')} Tỷ`;
     }
-    return \`$\${(price / 25000).toFixed(0).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',')}\`;
+    return `$${(price / 25000).toFixed(0).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',')}`;
   };
 
   const formatPricePerM2 = (price) => {
     if (!price) return '-';
-    return \`\${Math.round(price / 1000000)} tr/m²\`;
+    return `${Math.round(price / 1000000)} tr/m²`;
   };
 
   const toggleKeyword = (keyword) => {
@@ -365,12 +365,12 @@ export default function SearchPage() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = \`ktrix_\${new Date().toISOString().slice(0,10)}.csv\`;
+    a.download = `ktrix_${new Date().toISOString().slice(0,10)}.csv`;
     a.click();
   };
 
   const saveCurrentSearch = () => {
-    const searchName = \`\${searchParams.city} - \${searchParams.propertyType}\`;
+    const searchName = `${searchParams.city} - ${searchParams.propertyType}`;
     const newSearch = { id: Date.now(), name: searchName, params: { ...searchParams }, date: new Date().toLocaleDateString() };
     const updated = [...savedSearches, newSearch];
     setSavedSearches(updated);
@@ -401,16 +401,16 @@ export default function SearchPage() {
 
   const getSearchCriteriaSummary = () => {
     const criteria = [];
-    if (searchParams.city) criteria.push(\`\${t.city}: \${searchParams.city}\`);
-    if (searchParams.district) criteria.push(\`\${t.district}: \${searchParams.district}\`);
-    if (searchParams.propertyType) criteria.push(\`\${t.propertyType}: \${searchParams.propertyType}\`);
+    if (searchParams.city) criteria.push(`${t.city}: ${searchParams.city}`);
+    if (searchParams.district) criteria.push(`${t.district}: ${searchParams.district}`);
+    if (searchParams.propertyType) criteria.push(`${t.propertyType}: ${searchParams.propertyType}`);
     if (searchParams.priceMin || searchParams.priceMax) {
-      const priceRange = \`\${searchParams.priceMin || '0'} - \${searchParams.priceMax || '∞'} Tỷ\`;
-      criteria.push(\`Prix: \${priceRange}\`);
+      const priceRange = `${searchParams.priceMin || '0'} - ${searchParams.priceMax || '∞'} Tỷ`;
+      criteria.push(`Prix: ${priceRange}`);
     }
-    if (searchParams.bedrooms) criteria.push(\`\${t.bedrooms}: \${searchParams.bedrooms}\`);
-    if (searchParams.keywords.length > 0) criteria.push(\`Mots-clés: \${searchParams.keywords.slice(0, 3).join(', ')}\${searchParams.keywords.length > 3 ? '...' : ''}\`);
-    if (searchParams.sources.length < 3) criteria.push(\`Sources: \${searchParams.sources.join(', ')}\`);
+    if (searchParams.bedrooms) criteria.push(`${t.bedrooms}: ${searchParams.bedrooms}`);
+    if (searchParams.keywords.length > 0) criteria.push(`Mots-clés: ${searchParams.keywords.slice(0, 3).join(', ')}${searchParams.keywords.length > 3 ? '...' : ''}`);
+    if (searchParams.sources.length < 3) criteria.push(`Sources: ${searchParams.sources.join(', ')}`);
     return criteria;
   };
 
@@ -485,7 +485,7 @@ export default function SearchPage() {
                 {data.slice(0, 10).map((district, index) => (
                   <tr 
                     key={district.district} 
-                    className={\`border-b hover:bg-slate-50 transition \${index % 2 === 0 ? 'bg-white' : 'bg-slate-25'}\`}
+                    className={`border-b hover:bg-slate-50 transition ${index % 2 === 0 ? 'bg-white' : 'bg-slate-25'}`}
                   >
                     <td className="px-6 py-4">
                       <span className="font-medium text-gray-800">{district.district}</span>
@@ -615,13 +615,13 @@ export default function SearchPage() {
                       setSearchParams({ ...searchParams, sources: newSources });
                     }}
                     disabled={!source.active}
-                    className={\`px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 \${
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
                       !source.active ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         : searchParams.sources.includes(source.id) ? 'bg-sky-500 text-white shadow-md' : 'bg-slate-100 text-gray-700 hover:bg-slate-200 border-2 border-slate-200'
-                    }\`}
+                    }`}
                   >
                     {searchParams.sources.includes(source.id) && <span>✓</span>}
-                    {source.name} {!source.active && \`(\${t.comingSoon})\`}
+                    {source.name} {!source.active && `(${t.comingSoon})`}
                   </button>
                 ))}
               </div>
@@ -629,10 +629,10 @@ export default function SearchPage() {
 
             {/* Buy/Sell */}
             <div className="flex gap-4">
-              <button onClick={() => setMode('buy')} className={\`px-6 py-3 rounded-lg font-medium \${mode === 'buy' ? 'bg-sky-500 text-white' : 'bg-slate-100'}\`}>
+              <button onClick={() => setMode('buy')} className={`px-6 py-3 rounded-lg font-medium ${mode === 'buy' ? 'bg-sky-500 text-white' : 'bg-slate-100'}`}>
                 🏠 {t.buy}
               </button>
-              <button onClick={() => setMode('sell')} className={\`px-6 py-3 rounded-lg font-medium \${mode === 'sell' ? 'bg-orange-400 text-white' : 'bg-slate-100'}\`}>
+              <button onClick={() => setMode('sell')} className={`px-6 py-3 rounded-lg font-medium ${mode === 'sell' ? 'bg-orange-400 text-white' : 'bg-slate-100'}`}>
                 💰 {t.sell}
               </button>
             </div>
@@ -658,31 +658,31 @@ export default function SearchPage() {
                 <select value={searchParams.propertyType} onChange={(e) => setSearchParams({...searchParams, propertyType: e.target.value})} className="w-full px-4 py-2.5 border rounded-lg">
                   <option value="">{t.selectType}</option>
                   {getPropertyTypesByCategory().all.map((pt, i) => (
-                    <option key={\`all-\${i}\`} value={pt.vn}>📋 {pt[language]}</option>
+                    <option key={`all-${i}`} value={pt.vn}>📋 {pt[language]}</option>
                   ))}
                   <optgroup label="🏢 Apartments">
                     {getPropertyTypesByCategory().apartment.map((pt, i) => (
-                      <option key={\`apt-\${i}\`} value={pt.vn}>{pt[language]}</option>
+                      <option key={`apt-${i}`} value={pt.vn}>{pt[language]}</option>
                     ))}
                   </optgroup>
                   <optgroup label="🏠 Houses">
                     {getPropertyTypesByCategory().house.map((pt, i) => (
-                      <option key={\`house-\${i}\`} value={pt.vn}>{pt[language]}</option>
+                      <option key={`house-${i}`} value={pt.vn}>{pt[language]}</option>
                     ))}
                   </optgroup>
                   <optgroup label="🏪 Commercial">
                     {getPropertyTypesByCategory().commercial.map((pt, i) => (
-                      <option key={\`comm-\${i}\`} value={pt.vn}>{pt[language]}</option>
+                      <option key={`comm-${i}`} value={pt.vn}>{pt[language]}</option>
                     ))}
                   </optgroup>
                   <optgroup label="🌳 Land">
                     {getPropertyTypesByCategory().land.map((pt, i) => (
-                      <option key={\`land-\${i}\`} value={pt.vn}>{pt[language]}</option>
+                      <option key={`land-${i}`} value={pt.vn}>{pt[language]}</option>
                     ))}
                   </optgroup>
                   <optgroup label="📦 Other">
                     {getPropertyTypesByCategory().other.map((pt, i) => (
-                      <option key={\`other-\${i}\`} value={pt.vn}>{pt[language]}</option>
+                      <option key={`other-${i}`} value={pt.vn}>{pt[language]}</option>
                     ))}
                   </optgroup>
                 </select>
@@ -791,7 +791,7 @@ export default function SearchPage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {urgentKeywords.map((kw, i) => (
-                    <button key={i} onClick={() => toggleKeyword(kw)} className={\`px-3 py-1.5 rounded-full text-sm font-medium transition \${searchParams.keywords.includes(kw[language]) ? 'bg-orange-500 text-white' : 'bg-white text-orange-600 border border-orange-300'}\`}>
+                    <button key={i} onClick={() => toggleKeyword(kw)} className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${searchParams.keywords.includes(kw[language]) ? 'bg-orange-500 text-white' : 'bg-white text-orange-600 border border-orange-300'}`}>
                       {kw[language]}
                     </button>
                   ))}
@@ -856,18 +856,18 @@ export default function SearchPage() {
               <p className="text-sm font-bold text-gray-700 mb-3">🌐 {t.sourceResults}</p>
               <div className="grid grid-cols-3 gap-3">
                 {Object.entries(sourceStats).map(([source, count]) => (
-                  <div key={source} className={\`p-3 rounded-lg text-center \${
+                  <div key={source} className={`p-3 rounded-lg text-center ${
                     source === 'chotot.com' ? 'bg-green-50 border border-green-200' :
                     source === 'batdongsan.com.vn' ? 'bg-blue-50 border border-blue-200' :
                     source === 'alonhadat.com.vn' ? 'bg-purple-50 border border-purple-200' :
                     'bg-slate-50 border border-slate-200'
-                  }\`}>
-                    <p className={\`text-2xl font-bold \${
+                  }`}>
+                    <p className={`text-2xl font-bold ${
                       source === 'chotot.com' ? 'text-green-600' :
                       source === 'batdongsan.com.vn' ? 'text-blue-600' :
                       source === 'alonhadat.com.vn' ? 'text-purple-600' :
                       'text-slate-600'
-                    }\`}>{count}</p>
+                    }`}>{count}</p>
                     <p className="text-xs text-gray-600">{source}</p>
                   </div>
                 ))}
@@ -963,7 +963,7 @@ export default function SearchPage() {
                           <span className="text-sm font-bold">{prop.score}%</span>
                         </div>
                         <div className="w-full bg-slate-200 rounded-full h-2">
-                          <div className="h-2 rounded-full bg-gradient-to-r from-sky-400 to-blue-500" style={{ width: \`\${prop.score}%\` }} />
+                          <div className="h-2 rounded-full bg-gradient-to-r from-sky-400 to-blue-500" style={{ width: `${prop.score}%` }} />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 mb-3">
@@ -972,10 +972,10 @@ export default function SearchPage() {
                       </div>
                       <div 
                         className="flex items-start gap-2 text-sm text-gray-700 mb-3 cursor-pointer hover:text-sky-600 bg-slate-50 p-2 rounded-lg" 
-                        onClick={() => window.open(\`https://www.google.com/maps/search/?api=1&query=\${encodeURIComponent(prop.address || prop.district + ' ' + prop.city)}\`, '_blank')}
+                        onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(prop.address || prop.district + ' ' + prop.city)}`, '_blank')}
                       >
                         <MapPin className="w-4 h-4 mt-0.5 text-sky-500 flex-shrink-0" />
-                        <span className="line-clamp-2">{prop.address || \`\${prop.district}\${prop.district ? ', ' : ''}\${prop.city}\`}</span>
+                        <span className="line-clamp-2">{prop.address || `${prop.district}${prop.district ? ', ' : ''}${prop.city}`}</span>
                       </div>
                       {prop.postedOn && (
                         <div className="text-xs text-gray-500 mb-2">📅 {prop.postedOn}</div>
