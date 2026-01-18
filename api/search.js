@@ -680,7 +680,7 @@ function filterByKeywords(results, includeKeywords, excludeKeywords) {
 }
 
 function applyFilters(results, filters) {
-  const { city, district, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, legalStatus, streetWidthMin } = filters;
+  const { city, district, ward, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, legalStatus, streetWidthMin } = filters;
   let filtered = [...results];
   
   if (priceMin) {
@@ -712,6 +712,16 @@ function applyFilters(results, filters) {
       const itemAddress = removeVietnameseAccents((item.address || '').toLowerCase());
       const combined = itemDistrict + ' ' + itemTitle + ' ' + itemAddress;
       return combined.includes(d);
+    });
+  }
+  if (ward) {
+    const w = removeVietnameseAccents(ward.toLowerCase());
+    filtered = filtered.filter(item => {
+      const itemWard = removeVietnameseAccents((item.ward || '').toLowerCase());
+      const itemTitle = removeVietnameseAccents((item.title || '').toLowerCase());
+      const itemAddress = removeVietnameseAccents((item.address || '').toLowerCase());
+      const combined = itemWard + ' ' + itemTitle + ' ' + itemAddress;
+      return combined.includes(w);
     });
   }
   
@@ -1111,7 +1121,7 @@ export default async function handler(req, res) {
           console.log(`${source}: filtrage type ${beforeType} → ${typeFiltered.length}`);
         }
         
-        const filtered = applyFilters(typeFiltered, { city, district, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, legalStatus });
+        const filtered = applyFilters(typeFiltered, { city, district, ward, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, legalStatus });
         console.log(`${source}: ${results.length} → ${typeFiltered.length} (type) → ${filtered.length} (autres filtres)`);
         allResults.push(...filtered);
       }
