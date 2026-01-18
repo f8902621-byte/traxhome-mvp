@@ -16,6 +16,7 @@ export default function SearchPage() {
   const [error, setError] = useState(null);
   
   const [sourceStats, setSourceStats] = useState({});
+  const [filterSource, setFilterSource] = useState(null);
   const [bdsTaskId, setBdsTaskId] = useState(null);
   const [bdsStatus, setBdsStatus] = useState('idle');
   const [bdsProgress, setBdsProgress] = useState(0);
@@ -855,22 +856,39 @@ export default function SearchPage() {
             <div className="bg-white rounded-xl shadow-lg p-4 mb-4">
               <p className="text-sm font-bold text-gray-700 mb-3">🌐 {t.sourceResults}</p>
               <div className="grid grid-cols-3 gap-3">
-                {Object.entries(sourceStats).map(([source, count]) => (
-                  <div key={source} className={`p-3 rounded-lg text-center ${
-                    source === 'chotot.com' ? 'bg-green-50 border border-green-200' :
-                    source === 'batdongsan.com.vn' ? 'bg-blue-50 border border-blue-200' :
-                    source === 'alonhadat.com.vn' ? 'bg-purple-50 border border-purple-200' :
-                    'bg-slate-50 border border-slate-200'
-                  }`}>
-                    <p className={`text-2xl font-bold ${
-                      source === 'chotot.com' ? 'text-green-600' :
-                      source === 'batdongsan.com.vn' ? 'text-blue-600' :
-                      source === 'alonhadat.com.vn' ? 'text-purple-600' :
-                      'text-slate-600'
-                    }`}>{count}</p>
-                    <p className="text-xs text-gray-600">{source}</p>
-                  </div>
-                ))}
+{Object.entries(sourceStats).map(([source, count]) => (
+  <button
+    key={source}
+    onClick={() => setFilterSource(filterSource === source ? null : source)}
+    className={`p-3 rounded-lg text-center cursor-pointer transition-all ${
+      filterSource === source ? 'ring-2 ring-offset-2 ring-sky-500 scale-105' : 'hover:scale-105'
+    } ${
+      source === 'chotot.com' ? 'bg-green-50 border border-green-200' :
+      source === 'batdongsan.com.vn' ? 'bg-blue-50 border border-blue-200' :
+      source === 'alonhadat.com.vn' ? 'bg-purple-50 border border-purple-200' :
+      'bg-slate-50 border border-slate-200'
+    }`}
+  >
+    <p className={`text-2xl font-bold ${
+      source === 'chotot.com' ? 'text-green-600' :
+      source === 'batdongsan.com.vn' ? 'text-blue-600' :
+      source === 'alonhadat.com.vn' ? 'text-purple-600' :
+      'text-slate-600'
+    }`}>{count}</p>
+    <p className="text-xs text-gray-600">{source}</p>
+    {filterSource === source && (
+      <p className="text-xs text-sky-600 mt-1 font-medium">✓ Filtré</p>
+    )}
+  </button>
+))}
+{filterSource && (
+  <button 
+    onClick={() => setFilterSource(null)}
+    className="mt-3 w-full text-sm text-gray-500 hover:text-gray-700 py-2 bg-slate-100 rounded-lg"
+  >
+    ✕ Afficher toutes les sources
+  </button>
+)}
               </div>
             </div>
           )}
@@ -934,7 +952,7 @@ export default function SearchPage() {
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {sortResults(results).map((prop) => (
+                {sortResults(results).filter(r => !filterSource || r.source === filterSource).map((prop) => (
                   <div key={prop.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
                     <div className="relative h-48 bg-slate-200">
                       <img src={prop.imageUrl} alt={prop.title} className="w-full h-full object-cover" />
