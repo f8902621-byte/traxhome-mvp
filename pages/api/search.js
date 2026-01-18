@@ -202,24 +202,75 @@ async function saveListingsToSupabase(listings) {
 // ============================================
 // MAPPING DES VILLES → CODE RÉGION CHOTOT
 // ============================================
-const CHOTOT_REGIONS = {
-  'ho chi minh': '13000',
-  'ha noi': '12000',
-  'da nang': '3017',
-  'binh duong': '2011',
-  'khanh hoa': '7044',
-  'nha trang': '7044',
-  'can tho': '5027',
-  'hai phong': '4019',
-  'ba ria': '2010',
-  'vung tau': '2010',
-  'ba ria vung tau': '2010',
-  'quy nhon': '7043',
-  'binh dinh': '7043',
-  'lam dong': '9057',
-  'da lat': '9057',
-  'dalat': '9057',
+// ============================================
+// MAPPING DISTRICTS → CODE CHOTOT
+// ============================================
+const CHOTOT_DISTRICTS = {
+  // Hồ Chí Minh (13000)
+  '13000': {
+    'quan 1': '13001', '1': '13001',
+    'quan 2': '13002', '2': '13002',
+    'quan 3': '13003', '3': '13003',
+    'quan 4': '13004', '4': '13004',
+    'quan 5': '13005', '5': '13005',
+    'quan 6': '13006', '6': '13006',
+    'quan 7': '13007', '7': '13007',
+    'quan 8': '13008', '8': '13008',
+    'quan 9': '13009', '9': '13009',
+    'quan 10': '13010', '10': '13010',
+    'quan 11': '13011', '11': '13011',
+    'quan 12': '13012', '12': '13012',
+    'binh tan': '13013',
+    'binh thanh': '13014',
+    'go vap': '13015',
+    'phu nhuan': '13016',
+    'tan binh': '13017',
+    'tan phu': '13018',
+    'thu duc': '13096', 'thanh pho thu duc': '13096', 'tp thu duc': '13096', 'tp. thu duc': '13096',
+    'binh chanh': '13020', 'huyen binh chanh': '13020',
+    'can gio': '13021', 'huyen can gio': '13021',
+    'cu chi': '13022', 'huyen cu chi': '13022',
+    'hoc mon': '13023', 'huyen hoc mon': '13023',
+    'nha be': '13024', 'huyen nha be': '13024',
+  },
+  // Hà Nội (12000)
+  '12000': {
+    'ba dinh': '12001',
+    'hoan kiem': '12002',
+    'hai ba trung': '12003',
+    'dong da': '12004',
+    'cau giay': '12005',
+    'thanh xuan': '12006',
+    'hoang mai': '12007',
+    'long bien': '12008',
+    'nam tu liem': '12009',
+    'bac tu liem': '12010',
+    'tay ho': '12011',
+    'ha dong': '12012',
+  },
 };
+
+function getChototDistrictCode(regionCode, district) {
+  if (!district || !CHOTOT_DISTRICTS[regionCode]) return null;
+  
+  const d = removeVietnameseAccents(district.toLowerCase())
+    .replace(/^(quan|huyen|thanh pho|tp\.?|tx\.?|q\.?)\s*/i, '')
+    .trim();
+  
+  const districtMap = CHOTOT_DISTRICTS[regionCode];
+  
+  // Chercher correspondance exacte
+  if (districtMap[d]) return districtMap[d];
+  
+  // Chercher correspondance partielle
+  for (const [key, code] of Object.entries(districtMap)) {
+    if (d.includes(key) || key.includes(d)) {
+      return code;
+    }
+  }
+  
+  return null;
+}
 
 // ============================================
 // MAPPING DES VILLES ALONHADAT
@@ -747,7 +798,7 @@ function getChototRegion(city) {
 // CHOTOT API
 // ============================================
 async function fetchChotot(params) {
-  const { city, priceMin, priceMax, sortBy, propertyType } = params;
+  const { city, district, ward, priceMin, priceMax, sortBy, propertyType } = params;
   
   const regionCode = getChototRegion(city);
   const typeMapping = getPropertyTypeMapping(propertyType);
@@ -759,6 +810,12 @@ async function fetchChotot(params) {
   baseParams.append('region_v2', regionCode);
   baseParams.append('st', 's,k');
   baseParams.append('limit', '50');
+  // Filtre par district si spécifié
+  const districtCode = getChototDistrictCode(regionCode, district);
+  if (districtCode) {
+    baseParams.append('area', districtCode);
+    console.log(`Chotot: district="${district}" → area=${districtCode}`);
+  }
   
   if (priceMin || priceMax) {
     const minPrice = priceMin ? Math.round(parseFloat(priceMin) * 1000000000) : 0;
@@ -1651,7 +1708,7 @@ export default async function handler(req, res) {
       getTotalArchiveByDistrict(city),
       // Sources
       ...(sources?.includes('chotot') ? [
-        fetchChotot({ city, priceMin, priceMax, sortBy, propertyType })
+        fetchChotot({ city, district, ward, priceMin, priceMax, sortBy, propertyType })
           .then(results => ({ source: 'chotot', results }))
           .catch(e => { console.log(`Chotot erreur: ${e.message}`); return { source: 'chotot', results: [] }; })
       ] : []),
