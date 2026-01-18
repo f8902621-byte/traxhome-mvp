@@ -127,7 +127,8 @@ exports.handler = async (event) => {
     // 4. Calculer les stats par district
     const districtStats = {};
     const today = new Date();
-    const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    cconst oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+const twoWeeksAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
 
     for (const listing of finalListings) {
       const district = (listing.district || 'Inconnu').trim();
@@ -179,7 +180,7 @@ exports.handler = async (event) => {
       let priceTrend = null;
       let priceTrendPercent = 0;
       
-      if (stats.pricesPerM2ThisWeek.length >= 2 && stats.pricesPerM2LastWeek.length >= 2) {
+      if (false) { // DÉSACTIVÉ - Pas assez de données pour un trend fiable (besoin 6+ mois)
         const avgThisWeek = stats.pricesPerM2ThisWeek.reduce((a, b) => a + b, 0) / stats.pricesPerM2ThisWeek.length;
         const avgLastWeek = stats.pricesPerM2LastWeek.reduce((a, b) => a + b, 0) / stats.pricesPerM2LastWeek.length;
         
