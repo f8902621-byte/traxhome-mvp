@@ -1902,7 +1902,6 @@ const results = sortedResults.slice(0, 200).map(item => ({
 }));
 
 
-      const districtKey = (item.district || '').toLowerCase().trim();
 // const kos = computeKOS(item, districtStats[districtKey]);
       
       return {
