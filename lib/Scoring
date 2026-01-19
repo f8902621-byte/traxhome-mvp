@@ -44,3 +44,20 @@ export function computeKOS({
     label
   };
 }
+// ============================================
+// Export public attendu par pages/api/search.js
+// ============================================
+
+export function computeKOS(item, avgPricePerM2, districtStats) {
+  // Pour l’instant, on réutilise ton score existant
+  const result = calculateKOS(item, avgPricePerM2, districtStats);
+
+  return {
+    score: result.score,
+    level: result.label,
+    details: result.details || {
+      urgentKeywords: [],
+      listingAge: null
+    }
+  };
+}
