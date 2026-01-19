@@ -1826,11 +1826,11 @@ export default async function handler(req, res) {
         let typeFiltered = results;
         
         // Only apply keyword filtering for Chotot (alonhadat/batdongsan are already filtered by URL)
-        if (source === 'chotot' && (typeMapping.include.length > 0 || typeMapping.exclude.length > 0)) {
-          const beforeType = results.length;
-          typeFiltered = filterByKeywords(results, typeMapping.include, typeMapping.exclude);
-          console.log(`${source}: filtrage type ${beforeType} → ${typeFiltered.length}`);
-        }
+if (source === 'chotot') {
+  console.log(`CHOTOT – filtrage type DÉSACTIVÉ (${results.length})`);
+  typeFiltered = results;
+}
+
         
         const filtered = applyFilters(typeFiltered, { city, district, ward, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, legalStatus });
         console.log(`${source}: ${results.length} → ${typeFiltered.length} (type) → ${filtered.length} (autres filtres)`);
