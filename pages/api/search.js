@@ -1808,6 +1808,15 @@ export default async function handler(req, res) {
     ]);
 
     let allResults = [];
+    
+    console.log(
+  'SOURCES AVANT TOUT FILTRAGE',
+  sourceResults.map(s => ({
+    source: s.source,
+    count: s.results?.length || 0
+  }))
+);
+
     const typeMapping = getPropertyTypeMapping(propertyType);
 
     for (const { source, results } of sourceResults) {
