@@ -1943,9 +1943,6 @@ urgentKeywords: [],
         hasPlanningRisk: item.hasPlanningRisk || false,
         detectedKeywords: item.detectedKeywords || [],
         pricePosition: pricePosition,
-        kTrixOpportunityScore: kos?.score ?? null,
-kTrixOpportunityStatus: kos?.status ?? null,
-kTrixOpportunityDetails: kos?.components ?? null,
 
       };
     });
