@@ -3,7 +3,8 @@
 // Version avec Market Stats + Archive Trends
 // ============================================
 
-import { computeKOS } from '../../lib/Scoring';
+import { computeKOS } from '../../lib/Scoring.js';
+
 
 
 const APIFY_API_TOKEN = process.env.APIFY_API_TOKEN;
