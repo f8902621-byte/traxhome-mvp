@@ -39,25 +39,15 @@ export function computeKOS({
   else if (score >= 45) label = 'Bonne';
   else if (score >= 25) label = 'Moyenne';
 
-  return {
-    score,
-    label
-  };
-}
-// ============================================
-// Export public attendu par pages/api/search.js
-// ============================================
+return {
+  score,
+  label,
+  details: {
+    urgentKeywords: [],
+    listingAge: null,
+    priceAnalysis: null,
+    photoAnalysis: null,
+    legalStatus: null
+  }
+};
 
-export function computeKOS(item, avgPricePerM2, districtStats) {
-  // Pour l’instant, on réutilise ton score existant
-  const result = calculateKOS(item, avgPricePerM2, districtStats);
-
-  return {
-    score: result.score,
-    level: result.label,
-    details: result.details || {
-      urgentKeywords: [],
-      listingAge: null
-    }
-  };
-}
