@@ -1891,6 +1891,9 @@ export default async function handler(req, res) {
     const results = sortedResults.slice(0, 200).map((item, i) => {
       const negotiation = calculateNegotiationScore(item, avgPricePerM2);
       const pricePosition = analyzePricePosition(item, districtStats);
+
+      const districtKey = (item.district || '').toLowerCase().trim();
+const kos = computeKOS(item, districtStats[districtKey]);
       
       return {
         id: item.id || i,
@@ -1930,6 +1933,10 @@ export default async function handler(req, res) {
         hasPlanningRisk: item.hasPlanningRisk || false,
         detectedKeywords: item.detectedKeywords || [],
         pricePosition: pricePosition,
+        kTrixOpportunityScore: kos?.score ?? null,
+kTrixOpportunityStatus: kos?.status ?? null,
+kTrixOpportunityDetails: kos?.components ?? null,
+
       };
     });
 
