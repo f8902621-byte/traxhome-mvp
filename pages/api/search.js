@@ -1779,19 +1779,6 @@ function analyzePricePosition(item, districtStats) {
 // VERCEL HANDLER (export default)
 // ============================================
 export default async function handler(req, res) {
-  return res.status(200).json({
-  success: true,
-  results: [
-    {
-      id: 'test',
-      title: 'TEST API OK',
-      price: 123,
-      source: 'test'
-    }
-  ],
-  stats: {},
-  marketStats: []
-});
 
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
