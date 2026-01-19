@@ -1,1 +1,106 @@
+// ============================================
+// KTrix - Opportunity Score (KOS)
+// Version 1.0 – Statistical, non-predictive
+// ============================================
+
+// ---- CONFIGURATION ----
+const LIQUIDITY_THRESHOLD = 50;
+const MAX_DAYS_REFERENCE = 90;
+
+const TEXT_SIGNALS = [
+  /bán\s*gấp/i,
+  /cần\s*bán\s*nhanh/i,
+  /cần\s*bán/i,
+  /giá\s*thương\s*lượng/i,
+  /giá\s*rẻ/i,
+  /chính\s*chủ/i,
+  /hạ\s*giá/i,
+  /thanh\s*lý/i,
+  /cắt\s*lỗ/i
+];
+
+// ============================================
+// UTILS
+// ============================================
+
+function percentile(sortedValues, p) {
+  if (!sortedValues.length) return null;
+  const index = (p / 100) * (sortedValues.length - 1);
+  const lower = Math.floor(index);
+  const upper = Math.ceil(index);
+  if (lower === upper) return sortedValues[lower];
+  return sortedValues[lower] +
+    (sortedValues[upper] - sortedValues[lower]) * (index - lower);
+}
+
+function computeQuartiles(values) {
+  if (!values || values.length < 3) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  return {
+    q1: percentile(sorted, 25),
+    median: percentile(sorted, 50),
+    q3: percentile(sorted, 75)
+  };
+}
+
+function clamp01(x) {
+  return Math.max(0, Math.min(1, x));
+}
+
+// ============================================
+// SUB-SCORES
+// ============================================
+
+function computePriceScore(price, area, comparablePricesPerM2) {
+  if (!price || !area || area <= 0) return null;
+  if (!comparablePricesPerM2 || comparablePricesPerM2.length < 3) return null;
+
+  const pricePerM2 = price / area;
+  const q = computeQuartiles(comparablePricesPerM2);
+  if (!q || !q.q1 || !q.q3 || q.q3 <= q.q1) return null;
+
+  if (pricePerM2 <= q.q1) return 1;
+  if (pricePerM2 >= q.q3) return 0;
+
+  return clamp01((q.q3 - pricePerM2) / (q.q3 - q.q1));
+}
+
+function computeLiquidityScore(count) {
+  if (!count || count <= 0) return 0;
+  return clamp01(count / LIQUIDITY_THRESHOLD);
+}
+
+function computeAgeScore(item) {
+  let daysOnline = 0;
+
+  if (item.list_time) {
+    const t = item.list_time > 10000000000
+      ? item.list_time
+      : item.list_time * 1000;
+    daysOnline = Math.floor((Date.now() - t) / (1000 * 60 * 60 * 24));
+  } else if (item.postedOn) {
+    const d = new Date(item.postedOn);
+    if (!isNaN(d)) {
+      daysOnline = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+    }
+  }
+
+  if (daysOnline <= 0) return 0;
+  return clamp01(daysOnline / MAX_DAYS_REFERENCE);
+}
+
+function computeTextSignalScore(title, body) {
+  const text = ((title || '') + ' ' + (body || '')).toLowerCase();
+  let detected = 0;
+
+  for (const pattern of TEXT_SIGNALS) {
+    if (pattern.test(text)) detected++;
+  }
+
+  return clamp01(detected / TEXT_SIGNALS.length);
+}
+
+// ============================================
+// MAIN EXPORT
+// =======================
 
