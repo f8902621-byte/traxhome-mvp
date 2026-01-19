@@ -1941,8 +1941,7 @@ urgentKeywords: [],
         hasLegalIssue: item.hasLegalIssue || false,
         hasPlanningRisk: item.hasPlanningRisk || false,
         detectedKeywords: item.detectedKeywords || [],
-        pricePosition: pricePosition,
-
+   
       };
     });
 
