@@ -1891,11 +1891,11 @@ export default async function handler(req, res) {
       : 50000000;
 
     const results = sortedResults.slice(0, 200).map((item, i) => {
-      const negotiation = calculateNegotiationScore(item, avgPricePerM2);
+      // const negotiation = calculateNegotiationScore(item, avgPricePerM2);
       const pricePosition = analyzePricePosition(item, districtStats);
 
       const districtKey = (item.district || '').toLowerCase().trim();
-const kos = computeKOS(item, districtStats[districtKey]);
+// const kos = computeKOS(item, districtStats[districtKey]);
       
       return {
         id: item.id || i,
@@ -1913,14 +1913,14 @@ const kos = computeKOS(item, districtStats[districtKey]);
         images: item.images || [],
         url: item.url || '#',
         source: item.source || 'unknown',
-        score: negotiation.score,
-        negotiationLevel: negotiation.level,
-        negotiationDetails: negotiation.details,
-        hasUrgentKeyword: negotiation.details.urgentKeywords.length > 0,
-        urgentKeywords: negotiation.details.urgentKeywords,
+       score: null,
+negotiationLevel: null,
+negotiationDetails: null,
+hasUrgentKeyword: false,
+urgentKeywords: [],
         isNew: /hôm nay|phút|today/i.test(item.postedOn || ''),
         postedOn: item.postedOn || '',
-        daysOnline: negotiation.details.listingAge?.days || 0,
+       daysOnline: 0,
         legalStatus: item.legalStatus || null,
         direction: item.direction || null,
         floors: item.floors || null,
