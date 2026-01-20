@@ -812,7 +812,7 @@ async function fetchChotot(params) {
   
   const regionCode = getChototRegion(city);
   const typeMapping = getPropertyTypeMapping(propertyType);
-  
+  console.log(`Chotot typeMapping DEBUG:`, JSON.stringify(typeMapping));
   console.log(`Chotot: ville="${city}" → region=${regionCode}, type="${propertyType}" → code=${typeMapping.chotot}`);
   
   const baseParams = new URLSearchParams();
@@ -820,6 +820,7 @@ async function fetchChotot(params) {
   baseParams.append('region_v2', regionCode);
   baseParams.append('st', 's,k');
   baseParams.append('limit', '50');
+  console.log(`Chotot PARAMS DEBUG: ${baseParams.toString()}`);
 // Filtre par district si spécifié
   const districtCode = getChototDistrictCode(regionCode, district);
   if (districtCode) {
@@ -840,7 +841,7 @@ if (false && (priceMin || priceMax)) {}
   
   const allAds = [];
   const offsets = [0, 50, 100, 150, 200, 250];
-  
+  console.log(`Chotot URL DEBUG: https://gateway.chotot.com/v1/public/ad-listing?${baseParams.toString()}&o=0`);
   for (const offset of offsets) {
     try {
       const url = `https://gateway.chotot.com/v1/public/ad-listing?${baseParams}&o=${offset}`;
