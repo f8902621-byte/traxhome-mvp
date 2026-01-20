@@ -1877,12 +1877,25 @@ for (const { source, results } of sourceResults) {
       console.log(`Filtre keywordsOnly: ${before} → ${unique.length}`);
     }
     
-    let sortedResults = [...unique];
-    if (sortBy === 'price_asc') {
-      sortedResults.sort((a, b) => a.price - b.price);
-    } else if (sortBy === 'price_desc') {
-      sortedResults.sort((a, b) => b.price - a.price);
-    }
+ let sortedResults = [...unique];
+
+// Mélanger les sources par défaut pour équilibrer Chotot/Alonhadat/Batdongsan
+if (!sortBy || (sortBy !== 'price_asc' && sortBy !== 'price_desc')) {
+  sortedResults.sort(() => Math.random() - 0.5);
+}
+
+if (sortBy === 'price_asc') {
+  sortedResults.sort((a, b) => a.price - b.price);
+} else if (sortBy === 'price_desc') {
+  sortedResults.sort((a, b) => b.price - a.price);
+}
+
+// Log pour debug
+const sourceCounts = {};
+sortedResults.slice(0, 200).forEach(r => {
+  sourceCounts[r.source] = (sourceCounts[r.source] || 0) + 1;
+});
+console.log('SOURCES DANS FINAL 200:', sourceCounts);
     
     const validPricePerM2 = sortedResults
       .filter(item => item.area > 0 && item.price > 0)
