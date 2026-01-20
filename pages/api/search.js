@@ -1374,15 +1374,21 @@ function applyFilters(results, filters) {
     });
   }
   
-  if (priceMax) {
-    const max = parseFloat(priceMax) * 1000000000;
-    filtered = filtered.filter(item => {
-      if (item.source === 'batdongsan.com.vn' && (!item.price || item.price === 0)) {
-        return true;
-      }
-      return item.price > 0 && item.price <= max;
-    });
-  }
+ if (priceMax) {
+  const maxTy = parseFloat(priceMax);
+
+  filtered = filtered.filter(item => {
+    if (!item.price || item.price <= 0) return false;
+
+    // Normalisation : si prix > 1000 → c’est du VND
+    const priceTy = item.price > 1000
+      ? item.price / 1_000_000_000
+      : item.price;
+
+    return priceTy <= maxTy;
+  });
+}
+
   
 if (district) {
     const d = removeVietnameseAccents(district.toLowerCase());
