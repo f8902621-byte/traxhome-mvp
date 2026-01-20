@@ -816,15 +816,15 @@ async function fetchChotot(params) {
   console.log(`Chotot: ville="${city}" → region=${regionCode}, type="${propertyType}" → code=${typeMapping.chotot}`);
   
   const baseParams = new URLSearchParams();
-  // baseParams.append('cg', typeMapping.chotot.toString());
+  baseParams.append('cg', typeMapping.chotot.toString());
   baseParams.append('region_v2', regionCode);
   baseParams.append('st', 's,k');
   baseParams.append('limit', '50');
 // Filtre par district si spécifié
   const districtCode = getChototDistrictCode(regionCode, district);
   if (districtCode) {
-    baseParams.append('area', districtCode);  // TEMPORAIREMENT DÉSACTIVÉ
-    console.log(`Chotot: district="${district}" → area=${districtCode} (DISABLED)`);
+    baseParams.append('area_v2', districtCode);
+    console.log(`Chotot: district="${district}" → area_v2=${districtCode}`);
   }
   
 // Chotot API: filtre prix désactivé (format incompatible)
