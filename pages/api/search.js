@@ -1846,6 +1846,19 @@ for (const { source, results } of sourceResults) {
     console.log(`TOTAL BRUT: ${allResults.length}`);
     
     let unique = deduplicateResults(allResults);
+    // APPLIQUER LES FILTRES (prix, district, surface, etc.)
+unique = applyFilters(unique, { 
+  city, 
+  district, 
+  ward, 
+  priceMin, 
+  priceMax, 
+  livingAreaMin, 
+  livingAreaMax, 
+  bedrooms, 
+  legalStatus 
+});
+console.log(`Après applyFilters: ${unique.length} résultats`);
     const districtStats = calculateDistrictStats(unique);
     console.log(`Stats districts calculées: ${Object.keys(districtStats).length} districts`);
 
