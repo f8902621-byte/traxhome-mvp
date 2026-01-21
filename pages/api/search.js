@@ -1944,6 +1944,14 @@ sortedResults = sortedResults.map(item => {
     scoreDetails: scoreData.details
   };
 });
+    // DEBUG surfaces
+const surfaceDebug = sortedResults.slice(0, 5).map(r => ({
+  source: r.source,
+  area: r.area,
+  floorAreaSqm: r.floorAreaSqm,
+  title: r.title?.substring(0, 30)
+}));
+console.log('SURFACE DEBUG:', JSON.stringify(surfaceDebug));
 const results = sortedResults.slice(0, 200).map((item, i) => ({
   id: item.id || i,
   title: item.title || 'Sans titre',
