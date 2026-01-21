@@ -10,7 +10,7 @@ export default function MonitoringPage() {
   const fetchReport = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/.netlify/functions/monitoring');
+      const response = await fetch('/api/monitoring');
       const data = await response.json();
       setReport(data);
     } catch (err) {
