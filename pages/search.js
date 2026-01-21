@@ -308,12 +308,15 @@ export default function SearchPage() {
     setSourceStats({});
     setMarketStats([]);
     
-    try {
-      const response = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(searchParams)
-      });
+try {
+  const response = await fetch('/api/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...searchParams,
+      sortBy: sortBy === 'priceAsc' ? 'price_asc' : sortBy === 'priceDesc' ? 'price_desc' : 'score_desc'
+    })
+  });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Search error');
       
@@ -1003,7 +1006,7 @@ export default function SearchPage() {
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 mb-3">
-                        <div>📐 {prop.floorArea || '?'}m²</div>
+                        <div>📐 {prop.area || prop.floorArea || '?'}m²</div>
                         <div>🛏️ {prop.bedrooms || '?'} ch.</div>
                       </div>
                       <div 
