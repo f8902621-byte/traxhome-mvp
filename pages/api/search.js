@@ -1161,6 +1161,19 @@ function parseAlonhadatHtml(html, city) {
           listing.bedrooms = parseInt(bedroomMatch[1]);
         }
       }
+      }  // fin du bloc extraction titre
+
+      // Si toujours pas de chambres, chercher dans l'URL
+      if (!listing.bedrooms && listing.url) {
+        const urlBedroomMatch = listing.url.match(/(\d+)\s*-?(?:pn|phong-ngu|phong)/i);
+        if (urlBedroomMatch) {
+          const bedrooms = parseInt(urlBedroomMatch[1]);
+          if (bedrooms >= 1 && bedrooms <= 10) {
+            listing.bedrooms = bedrooms;
+          }
+        }
+      }
+
       // Étages
       const floorMatch = articleHtml.match(/>(\d+)\s*tầng</i);
       if (floorMatch) {
