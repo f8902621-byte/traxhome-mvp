@@ -1087,19 +1087,41 @@ function parseAlonhadatHtml(html, city) {
         }
       }
       
- // Surface - chercher spécifiquement les m² avec des valeurs réalistes (>10)
-const areaMatch = articleHtml.match(/(\d+)\s*m²/i) ||
-                  articleHtml.match(/diện\s*tích[:\s]*(\d+)/i) ||
-                  articleHtml.match(/dt[:\s]*(\d+)\s*m/i);
+// Surface - chercher les m² dans le HTML
+      const areaPatterns = [
+        /(\d+)\s*m²/i,
+        /(\d+)\s*m2/i,
+        /diện\s*tích[:\s]*(\d+)/i,
+        /dt[:\s]*(\d+)\s*m/i,
+        />(\d+)\s*m²</i,
+        /(\d+)m²/i
+      ];
 
-if (areaMatch) {
-  const areaValue = parseInt(areaMatch[1]);
-  // Ignorer les valeurs < 10 (probablement nombre de chambres)
-  if (areaValue >= 10) {
-    listing.area = areaValue;
-  }
-}
-      
+      for (const pattern of areaPatterns) {
+        const areaMatch = articleHtml.match(pattern);
+        if (areaMatch) {
+          const areaValue = parseInt(areaMatch[1]);
+          if (areaValue >= 10 && areaValue <= 10000) {
+            listing.area = areaValue;
+            break;
+          }
+        }
+      }
+
+      // Si pas de surface trouvée, chercher dans le titre
+      if (!listing.area && listing.title) {
+        const titleAreaMatch = listing.title.match(/(\d+)\s*m2/i) || listing.title.match(/(\d+)\s*m²/i);
+        if (titleAreaMatch) {
+          const areaValue = parseInt(titleAreaMatch[1]);
+          if (areaValue >= 10 && areaValue <= 10000) {
+            listing.area = areaValue;
+          }
+        }
+      }
+      // DEBUG: log si pas de surface trouvée
+      if (!listing.area && listing.title) {
+        console.log(`[ALONHADAT NO AREA] title="${listing.title.substring(0, 40)}", html_sample="${articleHtml.substring(0, 200)}"`);
+      }
       // Adresse
       const localityMatch = articleHtml.match(/itemprop=["']addressLocality["'][^>]*>([^<]+)</i);
       const regionMatch = articleHtml.match(/itemprop=["']addressRegion["'][^>]*>([^<]+)</i);
