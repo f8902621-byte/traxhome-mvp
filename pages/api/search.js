@@ -1154,7 +1154,13 @@ function parseAlonhadatHtml(html, city) {
       if (bedroomMatch) {
         listing.bedrooms = parseInt(bedroomMatch[1]);
       }
-      
+      // Extraire chambres depuis le titre si non trouvé
+      if (!listing.bedrooms && listing.title) {
+        const bedroomMatch = listing.title.match(/(\d+)\s*(?:pn|PN|phòng ngủ|phong ngu)/i);
+        if (bedroomMatch) {
+          listing.bedrooms = parseInt(bedroomMatch[1]);
+        }
+      }
       // Étages
       const floorMatch = articleHtml.match(/>(\d+)\s*tầng</i);
       if (floorMatch) {
