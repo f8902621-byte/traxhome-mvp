@@ -1046,7 +1046,7 @@ try {
         </div>
       )}
 
-      {/* Property Modal */}
+{/* Property Modal */}
       {selectedProperty && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -1055,13 +1055,96 @@ try {
               <button onClick={() => setSelectedProperty(null)} className="p-2 hover:bg-slate-100 rounded-full text-xl">✕</button>
             </div>
             <div className="p-6">
-              <p className="text-gray-500">Modal content here</p>
-              <button 
-                onClick={() => setSelectedProperty(null)} 
-                className="mt-4 px-6 py-3 border border-slate-300 rounded-lg font-medium hover:bg-slate-50 transition"
-              >
-                {t.close}
-              </button>
+              {/* Image */}
+              {selectedProperty.imageUrl && (
+                <div className="mb-6 rounded-xl overflow-hidden">
+                  <img src={selectedProperty.imageUrl} alt={selectedProperty.title} className="w-full h-64 object-cover" />
+                </div>
+              )}
+              
+              {/* Titre et Prix */}
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">{selectedProperty.title}</h3>
+              <div className="flex items-baseline gap-3 mb-4">
+                <span className="text-3xl font-bold text-sky-600">{formatPrice(selectedProperty.price)}</span>
+                {selectedProperty.area > 0 && (
+                  <span className="text-lg text-gray-500">({Math.round(selectedProperty.price / selectedProperty.area / 1000000)} tr/m²)</span>
+                )}
+              </div>
+
+              {/* Score */}
+              <div className="mb-6 p-4 bg-sky-50 rounded-xl">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-medium text-gray-700">{t.score}</span>
+                  <span className="text-2xl font-bold text-sky-600">{selectedProperty.score}%</span>
+                </div>
+                <div className="w-full bg-slate-200 rounded-full h-3">
+                  <div className="h-3 rounded-full bg-gradient-to-r from-sky-400 to-blue-500" style={{ width: `${selectedProperty.score}%` }} />
+                </div>
+              </div>
+
+              {/* Détails */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <p className="text-sm text-gray-500">📐 Surface</p>
+                  <p className="text-lg font-semibold">{selectedProperty.area || '?'} m²</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <p className="text-sm text-gray-500">🛏️ {t.rooms}</p>
+                  <p className="text-lg font-semibold">{selectedProperty.bedrooms || '?'}</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <p className="text-sm text-gray-500">🚿 {t.bathrooms}</p>
+                  <p className="text-lg font-semibold">{selectedProperty.bathrooms || '?'}</p>
+                </div>
+                {selectedProperty.floors && (
+                  <div className="p-3 bg-slate-50 rounded-lg">
+                    <p className="text-sm text-gray-500">🏢 Étages</p>
+                    <p className="text-lg font-semibold">{selectedProperty.floors}</p>
+                  </div>
+                )}
+                {selectedProperty.direction && (
+                  <div className="p-3 bg-slate-50 rounded-lg">
+                    <p className="text-sm text-gray-500">🧭 Hướng</p>
+                    <p className="text-lg font-semibold">{selectedProperty.direction}</p>
+                  </div>
+                )}
+                {selectedProperty.legalStatus && (
+                  <div className="p-3 bg-slate-50 rounded-lg">
+                    <p className="text-sm text-gray-500">📋 Pháp lý</p>
+                    <p className="text-lg font-semibold">{selectedProperty.legalStatus}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Adresse */}
+              <div className="mb-6 p-4 bg-slate-50 rounded-xl">
+                <p className="text-sm text-gray-500 mb-1">📍 Địa chỉ</p>
+                <p className="font-medium">{selectedProperty.address || `${selectedProperty.district || ''}, ${selectedProperty.ward || ''}`}</p>
+              </div>
+
+              {/* Source et Date */}
+              <div className="flex items-center justify-between text-sm text-gray-500 mb-6">
+                <span>🌐 {selectedProperty.source}</span>
+                {selectedProperty.postedOn && <span>📅 {selectedProperty.postedOn}</span>}
+              </div>
+
+              {/* Boutons */}
+              <div className="flex gap-3">
+                <a 
+                  href={selectedProperty.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-sky-400 text-white rounded-lg font-medium text-center hover:from-blue-600 hover:to-sky-500 transition"
+                >
+                  🔗 {t.viewOriginal}
+                </a>
+                <button 
+                  onClick={() => setSelectedProperty(null)} 
+                  className="px-6 py-3 border border-slate-300 rounded-lg font-medium hover:bg-slate-50 transition"
+                >
+                  {t.close}
+                </button>
+              </div>
             </div>
           </div>
         </div>
