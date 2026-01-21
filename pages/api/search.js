@@ -1087,12 +1087,18 @@ function parseAlonhadatHtml(html, city) {
         }
       }
       
-      // Surface
-      const areaMatch = articleHtml.match(/itemprop=["']value["'][^>]*>(\d+)/i) ||
-                        articleHtml.match(/>(\d+)\s*m²</i);
-      if (areaMatch) {
-        listing.area = parseInt(areaMatch[1]);
-      }
+ // Surface - chercher spécifiquement les m² avec des valeurs réalistes (>10)
+const areaMatch = articleHtml.match(/(\d+)\s*m²/i) ||
+                  articleHtml.match(/diện\s*tích[:\s]*(\d+)/i) ||
+                  articleHtml.match(/dt[:\s]*(\d+)\s*m/i);
+
+if (areaMatch) {
+  const areaValue = parseInt(areaMatch[1]);
+  // Ignorer les valeurs < 10 (probablement nombre de chambres)
+  if (areaValue >= 10) {
+    listing.area = areaValue;
+  }
+}
       
       // Adresse
       const localityMatch = articleHtml.match(/itemprop=["']addressLocality["'][^>]*>([^<]+)</i);
@@ -1910,16 +1916,7 @@ console.log(`Après applyFilters: ${unique.length} résultats`);
     
  let sortedResults = [...unique];
 
-// Tri des résultats
-if (sortBy === 'price_asc') {
-  sortedResults.sort((a, b) => (a.price || 0) - (b.price || 0));
-} else if (sortBy === 'price_desc') {
-  sortedResults.sort((a, b) => (b.price || 0) - (a.price || 0));
-} else {
-  // Mélanger seulement si PAS de tri par prix demandé
-  sortedResults.sort(() => Math.random() - 0.5);
-}
-
+// Le tri sera fait APRÈS le calcul du score
 // Log pour debug
 const sourceCounts = {};
 sortedResults.slice(0, 200).forEach(r => {
@@ -1944,6 +1941,15 @@ sortedResults = sortedResults.map(item => {
     scoreDetails: scoreData.details
   };
 });
+    // Tri des résultats APRÈS calcul du score
+if (sortBy === 'price_asc') {
+  sortedResults.sort((a, b) => (a.price || 0) - (b.price || 0));
+} else if (sortBy === 'price_desc') {
+  sortedResults.sort((a, b) => (b.price || 0) - (a.price || 0));
+} else if (sortBy === 'score_desc' || !sortBy) {
+  // Tri par score par défaut
+  sortedResults.sort((a, b) => (b.negotiationScore || 0) - (a.negotiationScore || 0));
+}
     // DEBUG surfaces
 const surfaceDebug = sortedResults.slice(0, 5).map(r => ({
   source: r.source,
