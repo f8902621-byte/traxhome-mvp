@@ -1440,12 +1440,12 @@ function applyFilters(results, filters) {
 if (item.source === 'alonhadat') {
   console.log(`[ALONHADAT PRICE DEBUG] price=${item.price}, title=${item.title?.substring(0, 30)}`);
 }
-    console.log(
-  "[PRICE DEBUG]",
-  item.source,
-  item.price,
-  typeof item.price
-);
+  //  console.log(
+ // "[PRICE DEBUG]",
+ // item.source,
+ // item.price,
+ // typeof item.price
+// );
 
     if (!item.price || item.price <= 0) return false;
 
@@ -1939,7 +1939,8 @@ for (const { source, results } of sourceResults) {
 console.log(`Après applyFilters: ${unique.length} résultats`);
     const districtStats = calculateDistrictStats(unique);
     console.log(`Stats districts calculées: ${Object.keys(districtStats).length} districts`);
-
+console.log('🔑 KEYWORDS CHECK:', { keywords, keywordsOnly, keywordsIsArray: Array.isArray(keywords), keywordsLen: keywords?.length });
+    
     if (keywordsOnly) {
       const before = unique.length;
       const keywordsToUse = [
