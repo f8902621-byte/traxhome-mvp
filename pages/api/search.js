@@ -1876,7 +1876,7 @@ export default async function handler(req, res) {
   const { city, district, ward, propertyType, priceMin, priceMax, livingAreaMin, livingAreaMax, bedrooms, sources, sortBy, keywords, keywordsOnly, legalStatus } = req.body || {};
 
   console.log('=== NOUVELLE RECHERCHE V4 ===');
-  console.log('Params:', JSON.stringify({ city, propertyType, priceMin, priceMax, sortBy, sources }));
+  console.log('Params:', JSON.stringify({ city, propertyType, priceMin, priceMax, sortBy, sources, keywords, keywordsOnly }));
 
   try {
     console.log('--- DEBUG SOURCES ---');
@@ -2005,7 +2005,7 @@ const KEYWORD_PATTERNS = {
           patternsToMatch.push(...patterns);
         }
       }
-      
+      console.log('DEBUG keywords:', { keywords, patternsToMatch });
       if (patternsToMatch.length > 0) {
         unique = unique.filter(item => {
           const title = removeVietnameseAccents((item.title || '').toLowerCase());
