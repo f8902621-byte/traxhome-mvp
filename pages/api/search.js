@@ -2041,11 +2041,12 @@ const KEYWORD_PATTERNS = {
       return true;
     }
     return false;
-  });
+ });
 
-  console.log(`Filtre keywords UI: ${before} → ${unique.length}`);
-      }
+      console.log(`Filtre keywords UI: ${before} → ${unique.length}`);
     }
+  }
+}
  let sortedResults = [...unique];
 
 // Le tri sera fait APRÈS le calcul du score
