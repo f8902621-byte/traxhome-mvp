@@ -1939,7 +1939,6 @@ for (const { source, results } of sourceResults) {
 console.log(`Après applyFilters: ${unique.length} résultats`);
     const districtStats = calculateDistrictStats(unique);
     console.log(`Stats districts calculées: ${Object.keys(districtStats).length} districts`);
-console.log('🔑 KEYWORDS CHECK:', { keywords, keywordsOnly, keywordsIsArray: Array.isArray(keywords), keywordsLen: keywords?.length });
     
     if (keywordsOnly) {
       const before = unique.length;
@@ -1970,8 +1969,7 @@ console.log('🔑 KEYWORDS CHECK:', { keywords, keywordsOnly, keywordsIsArray: A
     }
     // Filtre par keywords sélectionnés dans l'UI
     if (keywords && Array.isArray(keywords) && keywords.length > 0) {
-      console.log('DEBUG: Entering keywords filter block, keywords=', keywords);
-      const before = unique.length;
+        const before = unique.length;
       
 const KEYWORD_PATTERNS = {
         // Anglais (ce que le frontend envoie en mode EN)
@@ -2005,11 +2003,9 @@ const KEYWORD_PATTERNS = {
         const patterns = KEYWORD_PATTERNS[kw.toLowerCase()];
         if (patterns) {
           patternsToMatch.push(...patterns);
-        }
-        console.log('DEBUG: patternsToMatch=', patternsToMatch);
+     
       }
-      console.log('DEBUG keywords:', { keywords, patternsToMatch });
-if (patternsToMatch.length > 0) {
+ if (patternsToMatch.length > 0) {
   // Convertir les patterns vietnamiens en labels lisibles
   const PATTERN_TO_LABEL = {
     'ban gap': 'Bán gấp',
