@@ -1971,23 +1971,36 @@ console.log(`Après applyFilters: ${unique.length} résultats`);
     if (keywords && Array.isArray(keywords) && keywords.length > 0) {
       const before = unique.length;
       
-      const KEYWORD_PATTERNS = {
-        'urgent_sale': ['ban gap'],
-        'quick_sale': ['ban nhanh'],
-        'need_quick_sale': ['can ban gap', 'can ban nhanh'],
-        'need_money': ['can tien'],
-        'need_cash': ['ket tien'],
-        'cheap_price': ['gia re', 'gia tot'],
-        'bank_pressure': ['ngop bank', 'ngop ngan hang'],
-        'direct_owner': ['chinh chu'],
-        'no_agent': ['mien trung gian', 'khong qua moi gioi'],
-        'negotiable_price': ['gia thuong luong'],
-        'selling_at_loss': ['ban lo', 'cat lo', 'lo von', 'ha gia'],
+const KEYWORD_PATTERNS = {
+        // Anglais (ce que le frontend envoie en mode EN)
+        'urgent sale': ['ban gap'],
+        'quick sale': ['ban nhanh'],
+        'need quick sale': ['can ban nhanh', 'can ban gap'],
+        'need money': ['ket tien'],
+        'need cash': ['can tien'],
+        'cheap price': ['gia re', 'gia tot'],
+        'bank pressure': ['ngop bank', 'ngop ngan hang'],
+        'direct owner': ['chinh chu'],
+        'no agent': ['mien trung gian', 'khong qua moi gioi'],
+        'negotiable price': ['gia thuong luong'],
+        'selling at loss': ['ban lo', 'cat lo', 'lo von', 'ha gia'],
+        // Vietnamien (ce que le frontend envoie en mode VN)
+        'bán gấp': ['ban gap'],
+        'bán nhanh': ['ban nhanh'],
+        'cần bán nhanh': ['can ban nhanh', 'can ban gap'],
+        'kẹt tiền': ['ket tien'],
+        'cần tiền': ['can tien'],
+        'giá rẻ': ['gia re', 'gia tot'],
+        'ngộp bank': ['ngop bank', 'ngop ngan hang'],
+        'chính chủ': ['chinh chu'],
+        'miễn trung gian': ['mien trung gian', 'khong qua moi gioi'],
+        'giá thương lượng': ['gia thuong luong'],
+        'bán lỗ': ['ban lo', 'cat lo', 'lo von', 'ha gia'],
       };
       
       const patternsToMatch = [];
       for (const kw of keywords) {
-        const patterns = KEYWORD_PATTERNS[kw];
+        const patterns = KEYWORD_PATTERNS[kw.toLowerCase()];
         if (patterns) {
           patternsToMatch.push(...patterns);
         }
