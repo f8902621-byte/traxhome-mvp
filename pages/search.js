@@ -326,7 +326,7 @@ body: JSON.stringify({
   });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Search error');
-      
+      console.log('API Response - first result:', data.results?.[0]);
       setResults(data.results || []);
       setStats(data.stats);
       
