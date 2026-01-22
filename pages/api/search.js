@@ -1969,6 +1969,7 @@ console.log(`Après applyFilters: ${unique.length} résultats`);
     }
     // Filtre par keywords sélectionnés dans l'UI
     if (keywords && Array.isArray(keywords) && keywords.length > 0) {
+      console.log('DEBUG: Entering keywords filter block, keywords=', keywords);
       const before = unique.length;
       
 const KEYWORD_PATTERNS = {
@@ -2004,6 +2005,7 @@ const KEYWORD_PATTERNS = {
         if (patterns) {
           patternsToMatch.push(...patterns);
         }
+        console.log('DEBUG: patternsToMatch=', patternsToMatch);
       }
       console.log('DEBUG keywords:', { keywords, patternsToMatch });
       if (patternsToMatch.length > 0) {
