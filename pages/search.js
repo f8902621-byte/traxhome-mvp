@@ -997,6 +997,19 @@ body: JSON.stringify({
                     </div>
                     <div className="p-4">
                       <h3 className="font-bold text-lg mb-2 line-clamp-2">{prop.title}</h3>
+                        {/* Badges mots-clés détectés */}
+{prop.matchedKeywords && prop.matchedKeywords.length > 0 && (
+  <div className="flex flex-wrap gap-1 mb-2">
+    {prop.matchedKeywords.slice(0, 3).map((kw, idx) => (
+      <span
+        key={idx}
+        className="px-2 py-0.5 text-xs font-bold bg-orange-100 text-orange-600 rounded-full border border-orange-200"
+      >
+        🔥 {kw}
+      </span>
+    ))}
+  </div>
+)}
                       <div className="flex items-baseline gap-2 mb-2">
                         <p className="text-2xl font-bold text-sky-600">{formatPrice(prop.price)}</p>
                         {prop.pricePerSqm && prop.pricePerSqm > 0 && (
