@@ -2063,7 +2063,7 @@ if (keywordsOnly) {
 // Le tri sera fait APRÈS le calcul du score
 // Log pour debug
 const sourceCounts = {};
-sortedResults.slice(0, 200).forEach(r => {
+sortedResults.slice(0, 300).forEach(r => {
   sourceCounts[r.source] = (sourceCounts[r.source] || 0) + 1;
 });
 console.log('SOURCES DANS FINAL 200:', sourceCounts);
@@ -2102,7 +2102,7 @@ const surfaceDebug = sortedResults.slice(0, 5).map(r => ({
   title: r.title?.substring(0, 30)
 }));
 console.log('SURFACE DEBUG:', JSON.stringify(surfaceDebug));
-const results = sortedResults.slice(0, 200).map((item, i) => ({
+const results = sortedResults.slice(0, Math.min(300, sortedResults.length))
   id: item.id || i,
   title: item.title || 'Sans titre',
   price: item.price || 0,
