@@ -1937,6 +1937,13 @@ for (const { source, results } of sourceResults) {
   propertyType
 });
 console.log(`Après applyFilters: ${unique.length} résultats`);
+    // DEBUG: compter les sources après filtrage
+const sourceCountAfterFilter = {};
+unique.forEach(r => {
+  const src = r.source || 'unknown';
+  sourceCountAfterFilter[src] = (sourceCountAfterFilter[src] || 0) + 1;
+});
+console.log('SOURCES APRÈS FILTRAGE:', sourceCountAfterFilter);
     const districtStats = calculateDistrictStats(unique);
     console.log(`Stats districts calculées: ${Object.keys(districtStats).length} districts`);
     
