@@ -371,13 +371,14 @@ body: JSON.stringify({
     return `${Math.round(price / 1000000)} tr/m²`;
   };
 
-  const toggleKeyword = (keyword) => {
-    const kw = keyword[language];
-    setSearchParams(prev => ({
-      ...prev,
-      keywords: prev.keywords.includes(kw) ? prev.keywords.filter(k => k !== kw) : [...prev.keywords, kw]
-    }));
-  };
+const toggleKeyword = (keyword) => {
+  const kwVn = keyword.vn; // Toujours utiliser la version vietnamienne
+  const kwDisplay = keyword[language]; // Pour l'affichage
+  setSearchParams(prev => ({
+    ...prev,
+    keywords: prev.keywords.includes(kwVn) ? prev.keywords.filter(k => k !== kwVn) : [...prev.keywords, kwVn]
+  }));
+};
 
   const exportToExcel = () => {
     const headers = ['Titre', 'Prix', 'Ville', 'Surface', 'Chambres', 'Score', 'Source'];
@@ -792,17 +793,17 @@ body: JSON.stringify({
                 <div className="flex items-center justify-between mb-3 pb-3 border-b border-orange-200">
                   <button
                     type="button"
-                    onClick={() => {
-                      const allKeywords = urgentKeywords.map(kw => kw[language]);
-                      const allSelected = allKeywords.every(kw => searchParams.keywords.includes(kw));
-                      setSearchParams({
-                        ...searchParams,
-                        keywords: allSelected ? [] : allKeywords
-                      });
-                    }}
+onClick={() => {
+  const allKeywordsVn = urgentKeywords.map(kw => kw.vn); // Toujours vietnamien
+  const allSelected = allKeywordsVn.every(kw => searchParams.keywords.includes(kw));
+  setSearchParams({
+    ...searchParams,
+    keywords: allSelected ? [] : allKeywordsVn
+  });
+}}
                     className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-bold text-sm shadow"
                   >
-                    {urgentKeywords.map(kw => kw[language]).every(kw => searchParams.keywords.includes(kw)) 
+                    {urgentKeywords.map(kw => kw.vn).every(kw => searchParams.keywords.includes(kw))
                       ? (language === 'vn' ? '❌ Bỏ chọn tất cả' : language === 'fr' ? '❌ Tout désélectionner' : '❌ Deselect All')
                       : (language === 'vn' ? '✅ Chọn tất cả' : language === 'fr' ? '✅ Tout sélectionner' : '✅ Select All')}
                   </button>
@@ -819,11 +820,11 @@ body: JSON.stringify({
                   </label>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {urgentKeywords.map((kw, i) => (
-                    <button key={i} onClick={() => toggleKeyword(kw)} className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${searchParams.keywords.includes(kw[language]) ? 'bg-orange-500 text-white' : 'bg-white text-orange-600 border border-orange-300'}`}>
-                      {kw[language]}
-                    </button>
-                  ))}
+{urgentKeywords.map((kw, i) => (
+  <button key={i} onClick={() => toggleKeyword(kw)} className={`... ${searchParams.keywords.includes(kw.vn) ? 'bg-orange-500 text-white' : '...'}`}>
+    {kw[language]}
+  </button>
+))}
                 </div>
               </div>
             </div>
