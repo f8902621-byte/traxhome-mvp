@@ -2102,7 +2102,7 @@ const surfaceDebug = sortedResults.slice(0, 5).map(r => ({
   title: r.title?.substring(0, 30)
 }));
 console.log('SURFACE DEBUG:', JSON.stringify(surfaceDebug));
-const results = sortedResults.slice(0, Math.min(300, sortedResults.length))
+const results = sortedResults.slice(0, Math.min(300, sortedResults.length)).map((item, i) => ({
   id: item.id || i,
   title: item.title || 'Sans titre',
   price: item.price || 0,
