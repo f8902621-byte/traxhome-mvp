@@ -2004,7 +2004,8 @@ const KEYWORD_PATTERNS = {
         if (patterns) {
           patternsToMatch.push(...patterns);
      
-      }
+          }
+        }
  if (patternsToMatch.length > 0) {
   // Convertir les patterns vietnamiens en labels lisibles
   const PATTERN_TO_LABEL = {
@@ -2047,7 +2048,8 @@ if (keywordsOnly) {
   const before = unique.length;
   unique = unique.filter(item => item.matchedKeywords && item.matchedKeywords.length > 0);
   console.log(`Filtre keywordsOnly: ${before} → ${unique.length}`);
-}
+    }
+  }
 }
  let sortedResults = [...unique];
 
