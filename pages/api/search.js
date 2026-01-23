@@ -2028,24 +2028,26 @@ const KEYWORD_PATTERNS = {
     'ha gia': 'Hạ giá'
   };
 
-  unique = unique.filter(item => {
-    const title = removeVietnameseAccents((item.title || '').toLowerCase());
-    const body = removeVietnameseAccents((item.body || '').toLowerCase());
-    const combined = ' ' + title + ' ' + body + ' ';
+unique = unique.map(item => {
+  const title = removeVietnameseAccents((item.title || '').toLowerCase());
+  const body = removeVietnameseAccents((item.body || '').toLowerCase());
+  const combined = ' ' + title + ' ' + body + ' ';
 
-    // Trouver les mots-clés qui matchent
-    const matched = patternsToMatch.filter(p => combined.includes(p));
+  // Trouver les mots-clés qui matchent
+  const matched = patternsToMatch.filter(p => combined.includes(p));
 
-    if (matched.length > 0) {
-      item.matchedKeywords = matched.map(p => PATTERN_TO_LABEL[p] || p);
-      return true;
-    }
-    return false;
- });
-
-      console.log(`Filtre keywords UI: ${before} → ${unique.length}`);
-    }
+  if (matched.length > 0) {
+    item.matchedKeywords = matched.map(p => PATTERN_TO_LABEL[p] || p);
   }
+  return item;
+});
+
+// Filtrer SEULEMENT si keywordsOnly est activé
+if (keywordsOnly) {
+  const before = unique.length;
+  unique = unique.filter(item => item.matchedKeywords && item.matchedKeywords.length > 0);
+  console.log(`Filtre keywordsOnly: ${before} → ${unique.length}`);
+}
 }
  let sortedResults = [...unique];
 
