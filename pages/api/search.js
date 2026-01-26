@@ -915,207 +915,84 @@ if (false && (priceMin || priceMax)) {}
 }
 
 // ============================================
-// ALONHADAT - APPEL À LA FONCTION NETLIFY
+// ALONHADAT SCRAPER AVEC PAGINATION
 // ============================================
 async function fetchAlonhadat(params) {
-  const { city, propertyType, maxResults } = params;
+  const { city, district, ward, propertyType, priceMax, maxResults } = params;
   
-  try {
-    const cityNormalized = removeVietnameseAccents(city || 'ho chi minh');
-    const typeNormalized = removeVietnameseAccents(propertyType || 'nha o');
-    
-    // Mapping ville
-    let citySlug = 'ho-chi-minh';
-    for (const [key, value] of Object.entries(ALONHADAT_CITY_MAPPING)) {
-      if (cityNormalized.includes(key) || key.includes(cityNormalized)) {
-        citySlug = value;
+  if (!SCRAPER_API_KEY) {
+    console.log('Alonhadat: SCRAPER_API_KEY non configuré, skip');
+    return [];
+  }
+  
+  const cityNormalized = removeVietnameseAccents(city || 'ho chi minh');
+  const typeNormalized = removeVietnameseAccents(propertyType || 'nha o');
+  
+  // Mapping ville
+  let citySlug = 'ho-chi-minh';
+  for (const [key, value] of Object.entries(ALONHADAT_CITY_MAPPING)) {
+    if (cityNormalized.includes(key) || key.includes(cityNormalized)) {
+      citySlug = value;
+      break;
+    }
+  }
+  
+  // Mapping type
+  let typeSlug = 'nha-dat';
+  if (typeNormalized && !typeNormalized.includes('tat ca') && typeNormalized !== 'nha dat') {
+    for (const [key, value] of Object.entries(ALONHADAT_PROPERTY_TYPE)) {
+      if (typeNormalized.includes(key) || key.includes(typeNormalized)) {
+        typeSlug = value;
         break;
       }
     }
-    
-    // Mapping type
-    let typeSlug = 'nha-dat';
-    if (typeNormalized && !typeNormalized.includes('tat ca') && typeNormalized !== 'nha dat') {
-      for (const [key, value] of Object.entries(ALONHADAT_PROPERTY_TYPE)) {
-        if (typeNormalized.includes(key) || key.includes(typeNormalized)) {
-          typeSlug = value;
-          break;
-        }
-      }
-    }
-    
-    // Calculer maxPages selon maxResults
-    const maxPages = maxResults >= 200 ? 5 : maxResults >= 100 ? 3 : 2;
-    
-    // Appeler la fonction Netlify
-    const netlifyUrl = `https://ktrix-vn.netlify.app/.netlify/functions/alonhadat?city=${citySlug}&propertyType=${typeSlug}&maxPages=${maxPages}`;
-    
-    console.log(`Alonhadat: calling Netlify function with maxPages=${maxPages}`);
-    
-    const response = await fetch(netlifyUrl);
-    if (!response.ok) {
-      console.log(`Alonhadat: HTTP ${response.status}`);
-      return [];
-    }
-    
-    const data = await response.json();
-    
-    if (!data.success || !data.listings) {
-      console.log('Alonhadat: no listings returned');
-      return [];
-    }
-    
-    console.log(`Alonhadat: ${data.listings.length} annonces reçues de Netlify`);
-    return data.listings;
-    
-  } catch (error) {
-    console.log(`Alonhadat erreur: ${error.message}`);
-    return [];
   }
-}
 
-function parseAlonhadatHtml(html, city) {
-  const listings = [];
+  // Calculer le nombre de pages selon maxResults
+  const maxPages = maxResults >= 200 ? 5 : maxResults >= 100 ? 3 : 2;
   
-  // Regex pour extraire les articles
-  const articleRegex = /<article\s+class=["']property-item["'][^>]*>([\s\S]*?)<\/article>/gi;
-  let match;
+  console.log(`Alonhadat: scraping ${maxPages} pages`);
   
-  while ((match = articleRegex.exec(html)) !== null) {
-    const articleHtml = match[1];
-    
+  let allListings = [];
+  
+  for (let page = 1; page <= maxPages; page++) {
     try {
-      const listing = {};
+      const targetUrl = page === 1 
+        ? `https://alonhadat.com.vn/can-ban-${typeSlug}/${citySlug}`
+        : `https://alonhadat.com.vn/can-ban-${typeSlug}/${citySlug}/trang-${page}`;
       
-      // URL et ID
-      const urlMatch = articleHtml.match(/href=["']([^"']*\.html)["']/i);
-      if (urlMatch) {
-        const href = urlMatch[1];
-        listing.url = href.startsWith('http') ? href : `https://alonhadat.com.vn${href}`;
-        const memberIdMatch = articleHtml.match(/data-memberid=["'](\d+)["']/i);
-        listing.id = memberIdMatch ? `alonhadat_${memberIdMatch[1]}` : `alonhadat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      }
+      const scraperUrl = `https://api.scraperapi.com/?api_key=${SCRAPER_API_KEY}&url=${encodeURIComponent(targetUrl)}&render=true`;
       
-      // Titre
-      const titleMatch = articleHtml.match(/itemprop=["']name["'][^>]*>([^<]+)</i) ||
-                         articleHtml.match(/<h3[^>]*>([^<]+)</i);
-      listing.title = titleMatch ? titleMatch[1].trim() : 'Sans titre';
+      console.log(`Alonhadat page ${page}: ${targetUrl}`);
       
-      // Prix
-      const priceMatch = articleHtml.match(/itemprop=["']price["']\s+content=["'](\d+)["']/i);
-      if (priceMatch) {
-        listing.price = parseInt(priceMatch[1]);
-      } else {
-        const priceTextMatch = articleHtml.match(/([\d,\.]+)\s*tỷ/i);
-        if (priceTextMatch) {
-          listing.price = Math.round(parseFloat(priceTextMatch[1].replace(',', '.')) * 1000000000);
-        }
+      const response = await fetch(scraperUrl);
+      if (!response.ok) {
+        console.log(`Alonhadat page ${page}: HTTP ${response.status}`);
+        break;
       }
       
-// Surface - chercher les m² dans le HTML
-      const areaPatterns = [
-        /(\d+)\s*m²/i,
-        /(\d+)\s*m2/i,
-        /diện\s*tích[:\s]*(\d+)/i,
-        /dt[:\s]*(\d+)\s*m/i,
-        />(\d+)\s*m²</i,
-        /(\d+)m²/i
-      ];
-
-      for (const pattern of areaPatterns) {
-        const areaMatch = articleHtml.match(pattern);
-        if (areaMatch) {
-          const areaValue = parseInt(areaMatch[1]);
-          if (areaValue >= 10 && areaValue <= 10000) {
-            listing.area = areaValue;
-            break;
-          }
-        }
-      }
-
-      // Si pas de surface trouvée, chercher dans le titre
-      if (!listing.area && listing.title) {
-        const titleAreaMatch = listing.title.match(/(\d+)\s*m2/i) || listing.title.match(/(\d+)\s*m²/i);
-        if (titleAreaMatch) {
-          const areaValue = parseInt(titleAreaMatch[1]);
-          if (areaValue >= 10 && areaValue <= 10000) {
-            listing.area = areaValue;
-          }
-        }
-      }
-      // Si toujours pas de surface, chercher dans l'URL
-      if (!listing.area && listing.url) {
-        const urlAreaMatch = listing.url.match(/(\d+)-?(\d*)m2/i) || listing.url.match(/(\d+)-?(\d*)m²/i);
-        if (urlAreaMatch) {
-          let areaValue = parseInt(urlAreaMatch[1]);
-          // Gérer les décimales (64-5m2 = 64.5)
-          if (urlAreaMatch[2]) {
-            areaValue = parseFloat(`${urlAreaMatch[1]}.${urlAreaMatch[2]}`);
-          }
-          if (areaValue >= 10 && areaValue <= 10000) {
-            listing.area = Math.round(areaValue);
-          }
-        }
-      }
-      // DEBUG: log si pas de surface trouvée
-      if (!listing.area && listing.title) {
-        console.log(`[ALONHADAT NO AREA] title="${listing.title.substring(0, 40)}", html_sample="${articleHtml.substring(0, 200)}"`);
-      }
-      // Adresse
-      const localityMatch = articleHtml.match(/itemprop=["']addressLocality["'][^>]*>([^<]+)</i);
-      const regionMatch = articleHtml.match(/itemprop=["']addressRegion["'][^>]*>([^<]+)</i);
-      listing.district = localityMatch ? localityMatch[1].trim() : '';
-      listing.city = regionMatch ? regionMatch[1].trim() : city;
+      const html = await response.text();
+      const listings = parseAlonhadatHtml(html, city);
       
-      // Image
-      const imageMatch = articleHtml.match(/src=["']([^"']*(?:thumbnail|files)[^"']*)["']/i);
-      if (imageMatch) {
-        listing.thumbnail = imageMatch[1].startsWith('http') ? imageMatch[1] : `https://alonhadat.com.vn${imageMatch[1]}`;
+      console.log(`Alonhadat page ${page}: ${listings.length} annonces`);
+      
+      if (listings.length === 0) break;
+      
+      allListings.push(...listings);
+      
+      // Pause entre les requêtes pour éviter le rate limiting
+      if (page < maxPages) {
+        await new Promise(r => setTimeout(r, 500));
       }
       
-      // Chambres
-      const bedroomMatch = articleHtml.match(/itemprop=["']numberOfBedrooms["'][^>]*>(\d+)/i) ||
-                           articleHtml.match(/>(\d+)\s*(?:pn|phòng ngủ|PN)</i);
-      if (bedroomMatch) {
-        listing.bedrooms = parseInt(bedroomMatch[1]);
-      }
-      // Extraire chambres depuis le titre si non trouvé
-      if (!listing.bedrooms && listing.title) {
-        const bedroomMatch = listing.title.match(/(\d+)\s*(?:pn|PN|phòng ngủ|phong ngu)/i);
-        if (bedroomMatch) {
-          listing.bedrooms = parseInt(bedroomMatch[1]);
-        }
-      }
-
-      // Si toujours pas de chambres, chercher dans l'URL
-      if (!listing.bedrooms && listing.url) {
-        const urlBedroomMatch = listing.url.match(/(\d+)\s*-?(?:pn|phong-ngu|phong)/i);
-        if (urlBedroomMatch) {
-          const bedrooms = parseInt(urlBedroomMatch[1]);
-          if (bedrooms >= 1 && bedrooms <= 10) {
-            listing.bedrooms = bedrooms;
-          }
-        }
-      }
-
-      // Étages
-      const floorMatch = articleHtml.match(/>(\d+)\s*tầng</i);
-      if (floorMatch) {
-        listing.floors = parseInt(floorMatch[1]);
-      }
-      
-      listing.source = 'alonhadat.com.vn';
-      listing.images = listing.thumbnail ? [listing.thumbnail] : [];
-      
-      if (listing.title && listing.price > 0) {
-        listings.push(listing);
-      }
-    } catch (e) {
-      // Skip invalid listings
+    } catch (error) {
+      console.log(`Alonhadat page ${page} erreur: ${error.message}`);
+      break;
     }
   }
   
-  return listings;
+  console.log(`Alonhadat TOTAL: ${allListings.length} annonces`);
+  return allListings;
 }
 
 // ============================================
