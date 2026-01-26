@@ -49,7 +49,7 @@ export default function SearchPage() {
     sources: ['chotot', 'alonhadat', 'batdongsan'],
     keywords: [],
     keywordsOnly: false,
-    numSites: 5
+    maxResults: 200
   });
 
   useEffect(() => {
@@ -152,6 +152,7 @@ export default function SearchPage() {
       listings: 'Tin đăng',
       archive: 'Lưu trữ',
       trend: 'Xu hướng',
+      maxResults: 'Kết quả tối đa/nguồn',
     },
     en: {
       menu: 'Menu', searchParams: 'Search Parameters', backToHome: 'Home',
@@ -186,6 +187,7 @@ export default function SearchPage() {
       listings: 'Listings',
       archive: 'Archive',
       trend: 'Trend',
+      maxResults: 'Max results/source',
     },
     fr: {
       menu: 'Menu', searchParams: 'Paramètres', backToHome: 'Accueil',
@@ -220,6 +222,7 @@ export default function SearchPage() {
       listings: 'Annonces',
       archive: 'Archive',
       trend: 'Tendance',
+      maxResults: 'Résultats max/source',
     }
   }[language];
 
@@ -649,7 +652,26 @@ const toggleKeyword = (keyword) => {
                 ))}
               </div>
             </div>
-
+{/* Max Results per Source */}
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">📊 {t.maxResults}</label>
+  <div className="flex gap-2">
+    {[50, 100, 200, 300].map((num) => (
+      <button
+        key={num}
+        type="button"
+        onClick={() => setSearchParams({ ...searchParams, maxResults: num })}
+        className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+          searchParams.maxResults === num
+            ? 'bg-sky-500 text-white shadow-md'
+            : 'bg-slate-100 text-gray-700 hover:bg-slate-200 border border-slate-200'
+        }`}
+      >
+        {num}
+      </button>
+    ))}
+  </div>
+</div>
             {/* Buy/Sell */}
             <div className="flex gap-4">
               <button onClick={() => setMode('buy')} className={`px-6 py-3 rounded-lg font-medium ${mode === 'buy' ? 'bg-sky-500 text-white' : 'bg-slate-100'}`}>
