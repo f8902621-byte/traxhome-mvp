@@ -317,6 +317,7 @@ export default function SearchPage() {
     setMarketStats([]);
     console.log('DEBUG searchParams avant fetch:', JSON.stringify(searchParams));
 try {
+  console.log('[DEBUG FRONTEND] searchParams.maxResults =', searchParams.maxResults);
   const response = await fetch('/api/search', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
