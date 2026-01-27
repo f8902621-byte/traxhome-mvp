@@ -1110,7 +1110,7 @@ async function fetchBatdongsan(params) {
       console.log(`Batdongsan: HTTP ${response.status}`);
       return [];
     }
-    
+
     const html = await response.text();
     console.log(`Batdongsan: reçu ${(html.length/1024).toFixed(1)}KB`);
     
