@@ -74,32 +74,6 @@ export default async function handler(req, res) {
     report.warnings.push('ScraperAPI key not configured');
   }
 
-  // Test Batdongsan
-  try {
-    const start = Date.now();
-    const response = await fetch('https://batdongsan.com.vn', { method: 'HEAD' });
-    const responseTime = Date.now() - start;
-    
-    if (response.ok) {
-      report.services.batdongsan = {
-        status: 'healthy',
-        responseTime,
-        message: 'Site accessible'
-      };
-    } else {
-      report.services.batdongsan = {
-        status: 'down',
-        responseTime,
-        message: `HTTP ${response.status} - Bloqué`
-      };
-      report.warnings.push('Batdongsan blocking requests (HTTP 403)');
-    }
-  } catch (error) {
-    report.services.batdongsan = {
-      status: 'down',
-      message: error.message
-    };
-  }
 
   // Test Supabase
   if (SUPABASE_URL && SUPABASE_ANON_KEY) {
