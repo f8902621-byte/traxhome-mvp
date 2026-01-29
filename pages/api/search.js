@@ -1093,12 +1093,9 @@ if (imageMatch) {
   let imgUrl = imageMatch[1];
   // Convertir thumbnail en HD : plusieurs patterns possibles
 imgUrl = imgUrl
- .replace('/thumbnails/', '/upload/')
-.replace('/thumbnail/', '/upload/')
-.replace('/thumb/', '/upload/')
-  .replace(/\/\d+x\d+\//, '/800x600/')
-  .replace('_thumb', '')
-  .replace('_small', '');
+.replace('/thumbnails/', '/images/')
+.replace('/thumbnail/', '/images/')
+.replace('/thumb/', '/images/')
 listing.thumbnail = imgUrl.startsWith('http') ? imgUrl : `https://alonhadat.com.vn${imgUrl}`;
 console.log(`[ALONHADAT IMG DEBUG] ${listing.thumbnail?.substring(0, 80)}`);
 }
