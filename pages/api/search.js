@@ -1057,9 +1057,27 @@ function parseAlonhadatHtml(html, city) {
                           articleHtml.match(/class=["']bedroom["'][^>]*>(\d+)/i) ||
                           articleHtml.match(/>(\d+)\s*(?:PN|pn|phòng ngủ)</i) ||
                           articleHtml.match(/(\d+)\s*(?:PN|pn|phòng ngủ)/i);
-      if (bedroomMatch) {
-        listing.bedrooms = parseInt(bedroomMatch[1]);
-      }
+if (bedroomMatch) {
+  listing.bedrooms = parseInt(bedroomMatch[1]);
+}
+
+// Fallback: extraire depuis le titre (ex: "Nhà gồm 05 phòng", "nhà 4PN", "5 phòng ngủ")
+if (!listing.bedrooms && listing.title) {
+  const titleBedroomMatch = listing.title.match(/(\d+)\s*(?:PN|pn|phòng ngủ|phòng|phong)/i) ||
+                            listing.title.match(/nhà\s*(?:gồm\s*)?(\d+)\s*phòng/i);
+  if (titleBedroomMatch) {
+    listing.bedrooms = parseInt(titleBedroomMatch[1]);
+  }
+}
+
+// Extraire statut légal depuis le titre/description
+if (!listing.legalStatus && listing.title) {
+  if (listing.title.match(/sổ\s*(?:hồng|đỏ)/i) || listing.title.match(/shr|shcc/i)) {
+    listing.legalStatus = 'Sổ hồng/Sổ đỏ';
+  } else if (listing.title.match(/gpxd/i)) {
+    listing.legalStatus = 'GPXD';
+  }
+}
       if (listing.bedrooms) {
   console.log(`[ALONHADAT BEDROOM DEBUG] ${listing.bedrooms} ch - ${listing.title?.substring(0, 30)}`);
 }
