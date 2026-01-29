@@ -1063,9 +1063,9 @@ if (bedroomMatch) {
 
 // Fallback: extraire depuis le titre (ex: "Nhà gồm 05 phòng", "nhà 4PN", "5 phòng ngủ")
 if (!listing.bedrooms && listing.title) {
-  const titleBedroomMatch = listing.title.match(/(\d+)\s*(?:PN|pn|phòng ngủ|phòng|phong)/i) ||
-                            listing.title.match(/nhà\s*(?:gồm\s*)?(\d+)\s*phòng/i) ||
-                            listing.title.match(/(\d+)\s*(?:ngủ|ngu)/i);
+const titleBedroomMatch = listing.title.match(/(\d+)\s*(?:PN|pn|phòng ngủ)/i) ||
+                          listing.title.match(/nhà\s*(?:gồm\s*)?(\d+)\s*phòng/i) ||
+                          listing.title.match(/(\d+)\s*ngủ(?!\s*m)/i);
   if (titleBedroomMatch) {
     listing.bedrooms = parseInt(titleBedroomMatch[1]);
   }
@@ -2058,7 +2058,7 @@ if (sortBy === 'price_asc') {
   sortedResults.sort((a, b) => (b.negotiationScore || 0) - (a.negotiationScore || 0));
 }
     // Enrichir les TOP 10 annonces Alonhadat sans statut légal
-  sortedResults = await enrichTopAlonhadatListings(sortedResults, 10);
+  // sortedResults = await enrichTopAlonhadatListings(sortedResults, 10);
     // DEBUG surfaces
 const surfaceDebug = sortedResults.slice(0, 5).map(r => ({
   source: r.source,
