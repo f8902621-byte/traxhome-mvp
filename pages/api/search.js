@@ -1035,11 +1035,11 @@ function parseAlonhadatHtml(html, city) {
       }
       
       // Surface
-      const areaPatterns = [/(\d+)\s*m²/i, /(\d+)\s*m2/i, /(\d+)m²/i];
+   const areaPatterns = [/(\d+(?:[,\.]\d+)?)\s*m²/i, /(\d+(?:[,\.]\d+)?)\s*m2/i, /(\d+(?:[,\.]\d+)?)m²/i];
       for (const pattern of areaPatterns) {
         const areaMatch = articleHtml.match(pattern);
         if (areaMatch) {
-          const areaValue = parseInt(areaMatch[1]);
+          const areaValue = parseFloat(areaMatch[1].replace(',', '.'));
           if (areaValue >= 10 && areaValue <= 10000) {
             listing.area = areaValue;
             break;
@@ -1073,7 +1073,8 @@ if (!listing.bedrooms && listing.title) {
 
 // Extraire surface depuis le titre (ex: "68,8m2", "100m²", "150 m2")
 if (!listing.area && listing.title) {
-  const titleAreaMatch = listing.title.match(/(\d+(?:[,\.]\d+)?)\s*m[²2]/i);
+  const titleAreaMatch = listing.title.match(/(\d+(?:[,\.]\d+)?)\s*m²/i) || 
+                       listing.title.match(/(\d+(?:[,\.]\d+)?)\s*m2/i);
   if (titleAreaMatch) {
     listing.area = parseFloat(titleAreaMatch[1].replace(',', '.'));
   }
