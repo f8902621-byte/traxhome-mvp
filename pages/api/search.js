@@ -2018,7 +2018,12 @@ if (false && archiveData && archiveData.avgPricePerM2 > 0 && archiveData.count >
     }).sort((a, b) => b.count - a.count);
 
     console.log(`FINAL: ${results.length} résultats, ${marketStats.length} districts avec trends`);
-
+    
+// Sauvegarder les annonces dans Supabase (en arrière-plan, sans bloquer la réponse)
+saveListingsToSupabase(sortedResults.slice(0, 500)).catch(err => {
+  console.error('Erreur sauvegarde Supabase:', err.message);
+});
+    
     return res.status(200).json({ success: true, results, stats, marketStats });
 
   } catch (error) {
