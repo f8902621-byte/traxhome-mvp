@@ -113,11 +113,7 @@ export default function SearchPage() {
     return () => clearInterval(pollInterval);
   }, [bdsTaskId, bdsStatus]);
 // Relancer la recherche quand le tri change
-  useEffect(() => {
-    if (results.length > 0 && !loading) {
-      handleSearch();
-    }
-  }, [sortBy]);
+
   const t = {
     vn: {
       menu: 'Menu', searchParams: 'Tham số Tìm kiếm', backToHome: 'Trang chủ',
@@ -261,7 +257,7 @@ export default function SearchPage() {
   const availableSources = [
     { id: 'chotot', name: 'Chotot.com', active: true },
     { id: 'alonhadat', name: 'Alonhadat.com.vn', active: true },
-    { id: 'batdongsan', name: 'Batdongsan.com.vn', active: true },
+    // { id: 'batdongsan', name: 'Batdongsan.com.vn', active: true },
   ];
 
   const vietnamCities = [
@@ -287,6 +283,7 @@ export default function SearchPage() {
     'Hải Phòng': ['Hồng Bàng', 'Lê Chân', 'Ngô Quyền', 'Đồ Sơn'],
     'Bà Rịa - Vũng Tàu': ['Vũng Tàu', 'Bà Rịa', 'Long Điền', 'Phú Mỹ'],
     'Bình Định': ['Quy Nhơn', 'An Nhơn', 'Hoài Nhơn', 'Tuy Phước', 'Phù Cát'],
+    'Lâm Đồng': ['Đà Lạt', 'Bảo Lộc', 'Đức Trọng', 'Lâm Hà', 'Đơn Dương', 'Di Linh', 'Bảo Lâm', 'Đạ Huoai', 'Đạ Tẻh', 'Cát Tiên', 'Lạc Dương'],
   };
 
   const currentDistricts = districtsByCity[searchParams.city] || [];
